@@ -1,0 +1,38 @@
+{
+  "name": "vue-cms",
+  "version": "1.0.0",
+  "description": "Vue.js CMS with Express backend",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
+    "dev:client": "cd client && npm run dev",
+    "dev:server": "cd server && npm run dev",
+    "build": "cd client && npm run build",
+    "start": "cd server && npm start",
+    "install:all": "npm install && cd client && npm install && cd ../server && npm install"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.50.2",
+    "@tailwindcss/vite": "^4.1.11",
+    "dotenv": "^16.5.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "eslint": "^8.57.1",
+    "prettier": "^2.8.8",
+    "tailwindcss": "^4.1.11",
+    "vite": "^7.0.0",
+    "vue-eslint-parser": "^8.3.0"
+  },
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/4seventeen/vue-cms.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/4seventeen/vue-cms/issues"
+  },
+  "homepage": "https://github.com/4seventeen/vue-cms#readme"
+}
