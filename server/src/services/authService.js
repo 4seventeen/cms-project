@@ -13,7 +13,7 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 // Create a new user (signup)
 async function createUser(userData) {
   try {
-    const { email, password, username } = userData;
+    const { email, password, username, role } = userData;
 
     console.log('Creating user with email:', email);
 
@@ -40,7 +40,8 @@ async function createUser(userData) {
     const newUser = await databaseService.createUser({
       email,
       password_hash,
-      username: username || email.split('@')[0] // Use email prefix as default username
+      username: username || email.split('@')[0], // Use email prefix as default username
+      role
     });
 
     // Generate JWT token

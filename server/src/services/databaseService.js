@@ -18,17 +18,17 @@ async function testConnection() {
 
 // User operations
 async function createUser(userData) {
-  const { email, password_hash, username } = userData;
+  const { email, password_hash, username, role } = userData;
   const id = uuidv4();
   
   const query = `
-    INSERT INTO users (id, email, password_hash, username)
-    VALUES ($1, $2, $3, $4)
-    RETURNING id, email, username, created_at, email_verified
+    INSERT INTO users (id, email, password_hash, username, role)
+    VALUES ($1, $2, $3, $4, $5)
+    RETURNING id, email, username, created_at, email_verified, role
   `;
   
   try {
-    const result = await db.query(query, [id, email, password_hash, username]);
+    const result = await db.query(query, [id, email, password_hash, username, role]);
     return result.rows[0];
   } catch (error) {
     if (error.code === '23505') { // Unique violation

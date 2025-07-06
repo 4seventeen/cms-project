@@ -5,7 +5,7 @@ const authService = require("../services/authService");
 // Signup endpoint
 const signup = async (req, res) => {
   try {
-    const { email, password, username } = req.body;
+    const { email, password, username, role = false} = req.body;
 
     // Validate input
     if (!email || !password) {
@@ -21,7 +21,7 @@ const signup = async (req, res) => {
     }
 
     // Create user
-    const result = await authService.createUser({ email, password, username });
+    const result = await authService.createUser({ email, password, username, role });
 
     res.status(201).json({
       message: 'User created successfully',
