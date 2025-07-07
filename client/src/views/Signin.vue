@@ -107,14 +107,21 @@ const handleSubmit = async () => {
     }
   } catch (err) {
     console.error('Sign in error:', err)
-    
-    if (err.response?.status === 401) {
-      error.value = 'Invalid email or password'
-    } else if (err.response?.data?.error) {
+    // Always prefer backend error message if present
+    if (err.response?.data?.error) {
       error.value = err.response.data.error
+    } else if (err.response?.status === 401) {
+      error.value = 'Invalid email or password'
+      loading.value = false
+    } else if (typeof err === 'string') {
+      error.value = err
+    } else if (err.message) {
+      error.value = err.message
     } else {
       error.value = 'Sign in failed. Please try again.'
     }
+    // Debug: log the error value
+    console.log('Displayed error:', error.value)
   } finally {
     loading.value = false
   }
