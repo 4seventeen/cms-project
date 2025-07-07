@@ -1,11 +1,10 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import authService from './services/authService.js'
 import Navbar from './components/common/Navbar.vue'
 
 const router = useRouter()
-const route = useRoute()
 const isLoggedIn = ref(false)
 
 const checkAuthStatus = async () => {
@@ -35,14 +34,18 @@ const handleSignOut = async () => {
   }
 }
 
+// Only check auth status on initial mount, not on every route change
 onMounted(() => {
   checkAuthStatus()
 })
 
-// Watch for route changes to update auth status
-watch(route, () => {
-  checkAuthStatus()
-})
+// Expose a method to manually update auth status when needed
+const updateAuthStatus = (status) => {
+  isLoggedIn.value = status
+}
+
+// Make updateAuthStatus available globally for signin/signup components
+window.updateNavAuthStatus = updateAuthStatus
 </script>
 
 <template>

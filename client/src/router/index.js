@@ -70,61 +70,42 @@ const router = createRouter({
 })
 
 router.beforeEach(async (to, from, next) => {
-  const publicPages = ['/', '/about', '/signup', '/signin'];
-  const protectedRoutes = ['/dashboard', '/file-complaint', '/calendar', '/case'];
-  const profileRoutes = ['/profile', '/complete-profile'];
-
-  // Allow access to public pages
-  if (publicPages.includes(to.path)) {
+  // Define routes that REQUIRE authentication
+  const protectedRoutes = ['/dashboard', '/file-complaint', '/calendar', '/profile', '/complete-profile', '/edit-profile'];
+  const caseRoutePattern = /^\/case/; // Matches /case/*, /case/*/edit
+  
+  // Check if current route requires authentication
+  const requiresAuth = protectedRoutes.includes(to.path) || caseRoutePattern.test(to.path);
+  
+  // If route doesn't require auth, allow access
+  if (!requiresAuth) {
     return next();
   }
 
-  // Check if user is authenticated by validating token with backend
-  if (!authService.isAuthenticated()) {
-    // No token or user data in localStorage
-    if (protectedRoutes.some(route => to.path.startsWith(route)) || profileRoutes.includes(to.path)) {
-      return next('/signin');
+  // Route requires authentication - check if user is authenticated
+  try {
+    // Check authentication by getting current user
+    const userData = await authService.getCurrentUser();
+    
+    // User is authenticated, now check for profile completion for certain routes
+    const profileRequiredRoutes = ['/dashboard', '/file-complaint', '/calendar'];
+    
+    const requiresProfile = profileRequiredRoutes.includes(to.path) || 
+                           caseRoutePattern.test(to.path);
+
+    if (requiresProfile && !userData.user?.profile) {
+      console.log('Profile incomplete, redirecting to complete profile');
+      return next('/complete-profile');
     }
+
+    // All checks passed, allow access
     return next();
+  } catch (error) {
+    console.error('Authentication required but user not authenticated:', error);
+    
+    // User not authenticated for protected route - redirect to signin
+    return next('/signin');
   }
-
-  // User has token - validate it with backend for protected routes
-  if (protectedRoutes.some(route => to.path.startsWith(route))) {
-    try {
-      // Validate token and check profile completion
-      const userData = await authService.getCurrentUser();
-      
-      // If no profile exists, redirect to complete profile
-      if (!userData.user?.profile) {
-        return next('/complete-profile');
-      }
-      
-      // Profile exists, allow access
-      return next();
-    } catch (error) {
-      console.error('Authentication validation failed:', error);
-      // Clear invalid auth data and redirect to signin
-      authService.clearAuthData();
-      return next('/signin');
-    }
-  }
-
-  // For profile-related routes, validate authentication
-  if (profileRoutes.includes(to.path)) {
-    try {
-      // Validate token with backend
-      await authService.getCurrentUser();
-      return next();
-    } catch (error) {
-      console.error('Authentication validation failed:', error);
-      // Clear invalid auth data and redirect to signin
-      authService.clearAuthData();
-      return next('/signin');
-    }
-  }
-
-  // Allow access to other routes
-  next();
 });
 
 export default router 

@@ -80,10 +80,9 @@ api.interceptors.response.use(
         processQueue(refreshError);
         isRefreshing = false;
         
-        // Redirect to signin page if not already there
-        if (window.location.pathname !== "/signin" && window.location.pathname !== "/signup") {
-          window.location.href = "/signin";
-        }
+        // Don't automatically redirect here - let the router guard handle it
+        // This prevents conflicts between API interceptor and router navigation
+        console.log('Token refresh failed, authentication may be required');
         
         return Promise.reject(refreshError);
       }

@@ -89,21 +89,18 @@ const handleSubmit = async () => {
 
     console.log('Sign in successful:', result.user?.email)
     
-    // Check if user has completed their profile
-    try {
-      const userData = await authService.getCurrentUser()
-      
-      if (!userData.user?.profile) {
-        // No profile - redirect to complete profile
-        router.push('/complete-profile')
-      } else {
-        // Profile exists - redirect to dashboard
-        router.push('/dashboard')
-      }
-    } catch (profileError) {
-      console.error('Error checking profile:', profileError)
-      // On error, redirect to complete profile to be safe
+    // Update navbar auth status
+    if (window.updateNavAuthStatus) {
+      window.updateNavAuthStatus(true)
+    }
+    
+    // Check if user has completed their profile using the result from signin
+    if (!result.user?.profile) {
+      // No profile - redirect to complete profile
       router.push('/complete-profile')
+    } else {
+      // Profile exists - redirect to dashboard
+      router.push('/dashboard')
     }
   } catch (err) {
     console.error('Sign in error:', err)
@@ -112,7 +109,6 @@ const handleSubmit = async () => {
       error.value = err.response.data.error
     } else if (err.response?.status === 401) {
       error.value = 'Invalid email or password'
-      loading.value = false
     } else if (typeof err === 'string') {
       error.value = err
     } else if (err.message) {
