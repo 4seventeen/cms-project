@@ -65,13 +65,7 @@ onMounted(async () => {
 
 const loadUserInfo = async () => {
   try {
-    // Check if user is authenticated
-    if (!authService.isAuthenticated()) {
-      router.push('/signin')
-      return
-    }
-
-    // Get current user with profile data
+    // Get current user with profile data (this will check authentication)
     const response = await authService.getCurrentUser()
     if (response?.user) {
       user.value = response.user
@@ -89,14 +83,8 @@ const loadUserInfo = async () => {
     console.error('Profile error:', err)
     
     // If authentication failed, redirect to signin
-    if (err.message?.includes('token') || err.message?.includes('unauthorized')) {
-      authService.clearAuthData()
-      router.push('/signin')
-      return
-    }
-    
-    error.value = 'Failed to load user information. Please try again.'
-    setTimeout(() => (error.value = ''), 5000)
+    router.push('/signin')
+    return
   } finally {
     loading.value = false
   }
@@ -108,8 +96,7 @@ const signOut = async () => {
     router.push('/signin')
   } catch (error) {
     console.error('Sign out error:', error)
-    // Clear data and redirect even if API call fails
-    authService.clearAuthData()
+    // Redirect even if API call fails
     router.push('/signin')
   }
 }

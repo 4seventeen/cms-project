@@ -2,20 +2,19 @@ const authService = require('../services/authService');
 
 const authMiddleware = async (req, res, next) => {
   try {
-    const authHeader = req.header('Authorization');
+    // Try to get token from cookies first, then fallback to Authorization header for backward compatibility
+    let token = req.cookies.accessToken;
     
-    if (!authHeader) {
-      return res.status(401).json({ 
-        error: 'Access denied. No token provided.' 
-      });
+    if (!token) {
+      const authHeader = req.header('Authorization');
+      if (authHeader) {
+        token = authHeader.replace('Bearer ', '');
+      }
     }
-
-    // Extract token from 'Bearer <token>' format
-    const token = authHeader.replace('Bearer ', '');
     
     if (!token) {
       return res.status(401).json({ 
-        error: 'Access denied. Invalid token format.' 
+        error: 'Access denied. No token provided.' 
       });
     }
 
@@ -36,6 +35,49 @@ const authMiddleware = async (req, res, next) => {
     console.error('Authentication middleware error:', error);
     
     if (error.message.includes('expired')) {
+      // For cookie-based auth, try to refresh token automatically
+      if (req.cookies.refreshToken) {
+        try {
+          const result = await authService.refreshAccessToken(req.cookies.refreshToken);
+          
+          // Set new cookies
+          const COOKIE_OPTIONS = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 15 * 60 * 1000 // 15 minutes
+          };
+          
+          const REFRESH_COOKIE_OPTIONS = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+          };
+          
+          res.cookie('accessToken', result.accessToken, COOKIE_OPTIONS);
+          res.cookie('refreshToken', result.refreshToken, REFRESH_COOKIE_OPTIONS);
+          
+          // Add user info to request object
+          req.user = {
+            id: result.user.id,
+            email: result.user.email,
+            username: result.user.username
+          };
+          
+          return next();
+        } catch (refreshError) {
+          console.error('Token refresh failed:', refreshError);
+          // Clear cookies if refresh fails
+          res.clearCookie('accessToken', { httpOnly: true, sameSite: 'lax' });
+          res.clearCookie('refreshToken', { httpOnly: true, sameSite: 'lax' });
+          
+          return res.status(401).json({ 
+            error: 'Token expired and refresh failed. Please sign in again.' 
+          });
+        }
+      }
+      
       return res.status(401).json({ 
         error: 'Token expired. Please sign in again.' 
       });
@@ -56,16 +98,25 @@ const authMiddleware = async (req, res, next) => {
 // Optional middleware for routes that can work with or without authentication
 const optionalAuthMiddleware = async (req, res, next) => {
   try {
-    const authHeader = req.header('Authorization');
+    // Try to get token from cookies first, then fallback to Authorization header
+    let token = req.cookies.accessToken;
     
-    if (authHeader) {
-      const token = authHeader.replace('Bearer ', '');
-      
-      if (token) {
+    if (!token) {
+      const authHeader = req.header('Authorization');
+      if (authHeader) {
+        token = authHeader.replace('Bearer ', '');
+      }
+    }
+    
+    if (token) {
+      try {
         const user = await authService.verifyToken(token);
         if (user) {
           req.user = user;
         }
+      } catch (error) {
+        // For optional auth, we continue even if token verification fails
+        console.warn('Optional auth middleware warning:', error.message);
       }
     }
     

@@ -8,9 +8,18 @@ const router = useRouter()
 const route = useRoute()
 const isLoggedIn = ref(false)
 
-const checkAuthStatus = () => {
-  const token = localStorage.getItem('token')
-  isLoggedIn.value = !!token
+const checkAuthStatus = async () => {
+  try {
+    // Check authentication status by making a request to get current user
+    await authService.getCurrentUser()
+    isLoggedIn.value = true
+  } catch (error) {
+    // Don't log 401 errors as they're expected for unauthenticated users
+    if (error.response?.status !== 401) {
+      console.error('Auth check error:', error)
+    }
+    isLoggedIn.value = false
+  }
 }
 
 const handleSignOut = async () => {
@@ -20,8 +29,7 @@ const handleSignOut = async () => {
     router.push('/signin')
   } catch (error) {
     console.error('Sign out error:', error)
-    // Clear local data even if API call fails
-    authService.clearAuthData()
+    // Even if API call fails, consider sign out successful
     isLoggedIn.value = false
     router.push('/signin')
   }

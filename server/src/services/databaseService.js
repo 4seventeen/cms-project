@@ -92,15 +92,15 @@ async function createProfile(profileData) {
     middle_name,
     last_name,
     suffix,
-    birth_date,
-    gender,
-    phone_number,
-    address_line1,
-    address_line2,
+    date_of_birth,
+    sex,
+    phone,
+    country,
+    barangay,
     city,
     province,
-    postal_code,
-    occupation
+    sitio_purok_subdivision,
+    house_street
   } = profileData;
   
   const id = uuidv4();
@@ -108,8 +108,8 @@ async function createProfile(profileData) {
   const query = `
     INSERT INTO profiles (
       id, user_id, first_name, middle_name, last_name, suffix,
-      birth_date, gender, phone_number, address_line1, address_line2,
-      city, province, postal_code, occupation
+      date_of_birth, sex, phone, country, barangay,
+      city, province, sitio_purok_subdivision, house_street
     )
     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
     RETURNING *
@@ -118,8 +118,8 @@ async function createProfile(profileData) {
   try {
     const result = await db.query(query, [
       id, user_id, first_name, middle_name, last_name, suffix,
-      birth_date, gender, phone_number, address_line1, address_line2,
-      city, province, postal_code, occupation
+      date_of_birth, sex, phone, country, barangay,
+      city, province, sitio_purok_subdivision, house_street
     ]);
     return result.rows[0];
   } catch (error) {

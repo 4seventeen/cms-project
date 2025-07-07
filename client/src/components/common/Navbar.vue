@@ -25,16 +25,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import authService from '../../services/authService.js'
+import { ref } from 'vue'
 
-const user = ref(null)
 const showUserMenu = ref(false)
-
-onMounted(() => {
-  // Get user from localStorage
-  user.value = authService.getStoredUser()
-})
 
 const emit = defineEmits(['sign-out'])
 

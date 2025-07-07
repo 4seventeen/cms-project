@@ -137,7 +137,7 @@ The PostgreSQL database includes the following tables:
 
 4. Configure environment variables in `.env`:
    ```
-   VITE_API_BASE_URL=http://localhost:3001/api
+   VITE_API_BASE_URL=http://localhost:3000/api
    ```
 
 5. Start the client:

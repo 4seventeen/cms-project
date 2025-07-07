@@ -7,16 +7,29 @@ const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json"
-  }
+  },
+  withCredentials: true // Enable cookies for CORS
 });
 
-// Request interceptor to add auth token
+// Track if we're currently refreshing token to prevent multiple simultaneous refresh requests
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  
+  failedQueue = [];
+};
+
+// Request interceptor - no longer needed to add auth token since we use cookies
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
     return config;
   },
   (error) => {
@@ -24,22 +37,53 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle auth errors
+// Response interceptor to handle auth errors and automatic token refresh
 api.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      
-      // Redirect to signin page if not already there
-      if (window.location.pathname !== "/signin" && window.location.pathname !== "/signup") {
-        window.location.href = "/signin";
+  async (error) => {
+    const originalRequest = error.config;
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // If we're already refreshing, queue this request
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(() => {
+          return api(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        // Try to refresh the token
+        await api.post('/refresh-token');
+        
+        // Token refresh successful, retry the original request
+        processQueue(null);
+        isRefreshing = false;
+        
+        return api(originalRequest);
+      } catch (refreshError) {
+        // Token refresh failed
+        processQueue(refreshError);
+        isRefreshing = false;
+        
+        // Redirect to signin page if not already there
+        if (window.location.pathname !== "/signin" && window.location.pathname !== "/signup") {
+          window.location.href = "/signin";
+        }
+        
+        return Promise.reject(refreshError);
       }
     }
+
+    // For other errors, just reject
     return Promise.reject(error);
   }
 );

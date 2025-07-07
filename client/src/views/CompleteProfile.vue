@@ -101,12 +101,6 @@ const loading = ref(false)
 
 onMounted(async () => {
   try {
-    // Check if user is authenticated
-    if (!authService.isAuthenticated()) {
-      router.push('/signin')
-      return
-    }
-
     // Check if user already has a completed profile
     const response = await authService.getCurrentUser()
     if (response?.user) {
@@ -123,7 +117,6 @@ onMounted(async () => {
     }
   } catch (error) {
     console.error('Error loading user data:', error)
-    authService.clearAuthData()
     router.push('/signin')
   }
 })

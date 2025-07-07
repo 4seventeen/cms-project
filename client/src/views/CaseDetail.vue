@@ -202,16 +202,11 @@ const downloadFile = async (file) => {
 
   try {
     // Create download URL using the new API endpoint
-    const downloadUrl = `/api/cases/${caseData.value.id}/attachments/${file.id}/download`
+    const downloadUrl = `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'}/cases/${caseData.value.id}/attachments/${file.id}/download`
     
-    // Get the auth token for the request
-    const token = authService.getStoredToken()
-    
-    // Fetch the file blob
+    // Fetch the file blob with credentials for cookie-based auth
     const response = await fetch(downloadUrl, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
+      credentials: 'include' // Include cookies for authentication
     })
 
     if (!response.ok) {

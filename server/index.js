@@ -1,17 +1,22 @@
 const express = require('express');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const path = require('path');
 const authRoutes = require('./routes/auth');
 const caseRoutes = require('./routes/caseRoutes');
 const db = require('./config/database');
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:5174'] }));
+app.use(cookieParser());
+app.use(cors({ 
+  origin: ['http://localhost:5173', 'http://localhost:5174'],
+  credentials: true // Enable cookies for CORS
+}));
 
 // Serve static files from uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -80,6 +85,7 @@ async function start() {
       console.log(`🔗 Auth endpoints:`);
       console.log(`   - POST /api/signup - Create new user`);
       console.log(`   - POST /api/signin - Sign in user`);
+      console.log(`   - POST /api/refresh-token - Refresh access token`);
       console.log(`   - GET  /api/user - Get current user (protected)`);
       console.log(`   - PUT  /api/profile - Update user profile (protected)`);
       console.log(`   - POST /api/change-password - Change password (protected)`);
