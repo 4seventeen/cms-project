@@ -83,8 +83,10 @@ async function start() {
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
       console.log(`🔗 Auth endpoints:`);
-      console.log(`   - POST /api/signup - Create new user`);
-      console.log(`   - POST /api/signin - Sign in user`);
+      console.log(`   - POST /api/signup - Create new user (requires email verification)`);
+      console.log(`   - POST /api/signin - Sign in user (requires verified email)`);
+      console.log(`   - POST /api/verify-email - Verify email with token`);
+      console.log(`   - POST /api/resend-verification - Resend verification email`);
       console.log(`   - POST /api/refresh-token - Refresh access token`);
       console.log(`   - POST /api/forgot-password - Request password reset`);
       console.log(`   - POST /api/reset-password - Reset password with token`);
@@ -103,13 +105,14 @@ async function start() {
       console.log(`🔗 Other endpoints:`);
       console.log(`   - GET    /api/health - Health check`);
       
-      // Set up periodic cleanup of expired password reset tokens (every hour)
+      // Set up periodic cleanup of expired tokens (every hour)
       setInterval(async () => {
         try {
           const authService = require('./src/services/authService');
           await authService.cleanupExpiredPasswordResetTokens();
+          await authService.cleanupExpiredEmailVerificationTokens();
         } catch (error) {
-          console.error('Failed to cleanup expired password reset tokens:', error);
+          console.error('Failed to cleanup expired tokens:', error);
         }
       }, 60 * 60 * 1000); // Run every hour
     });

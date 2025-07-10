@@ -33,6 +33,11 @@ const routes = [
     component: () => import('../views/ResetPassword.vue')
   },
   {
+    path: '/verify-email',
+    name: 'VerifyEmail',
+    component: () => import('../views/VerifyEmail.vue')
+  },
+  {
     path: '/dashboard',
     name: 'Dashboard',
     component: () => import('../views/Dashboard.vue')

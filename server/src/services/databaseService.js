@@ -483,6 +483,84 @@ async function deleteExpiredPasswordResetTokens() {
   }
 }
 
+// Email verification operations
+async function createEmailVerificationToken(userId, token, expiresAt) {
+  const query = `
+    INSERT INTO email_verification_tokens (user_id, token, expires_at)
+    VALUES ($1, $2, $3)
+    RETURNING *
+  `;
+  
+  try {
+    const result = await db.query(query, [userId, token, expiresAt]);
+    return result.rows[0];
+  } catch (error) {
+    throw new Error(`Error creating email verification token: ${error.message}`);
+  }
+}
+
+async function getEmailVerificationToken(token) {
+  const query = `
+    SELECT evt.*, u.email, u.username
+    FROM email_verification_tokens evt
+    JOIN users u ON evt.user_id = u.id
+    WHERE evt.token = $1 AND evt.expires_at > NOW() AND evt.used = FALSE
+  `;
+  
+  try {
+    const result = await db.query(query, [token]);
+    return result.rows[0] || null;
+  } catch (error) {
+    throw new Error(`Error fetching email verification token: ${error.message}`);
+  }
+}
+
+async function markEmailVerificationTokenAsUsed(token) {
+  const query = `
+    UPDATE email_verification_tokens 
+    SET used = TRUE 
+    WHERE token = $1
+    RETURNING *
+  `;
+  
+  try {
+    const result = await db.query(query, [token]);
+    return result.rows[0];
+  } catch (error) {
+    throw new Error(`Error marking email verification token as used: ${error.message}`);
+  }
+}
+
+async function verifyUserEmail(userId) {
+  const query = `
+    UPDATE users 
+    SET email_verified = TRUE, updated_at = NOW()
+    WHERE id = $1
+    RETURNING id, email, username, email_verified
+  `;
+  
+  try {
+    const result = await db.query(query, [userId]);
+    return result.rows[0];
+  } catch (error) {
+    throw new Error(`Error verifying user email: ${error.message}`);
+  }
+}
+
+async function deleteExpiredEmailVerificationTokens() {
+  const query = `
+    DELETE FROM email_verification_tokens 
+    WHERE expires_at < NOW() OR used = TRUE
+  `;
+  
+  try {
+    const result = await db.query(query);
+    return result.rowCount;
+  } catch (error) {
+    throw new Error(`Error deleting expired email verification tokens: ${error.message}`);
+  }
+}
+
 module.exports = {
   testConnection,
   createUser,
@@ -503,5 +581,10 @@ module.exports = {
   getPasswordResetToken,
   markPasswordResetTokenAsUsed,
   updateUserPassword,
-  deleteExpiredPasswordResetTokens
+  deleteExpiredPasswordResetTokens,
+  createEmailVerificationToken,
+  getEmailVerificationToken,
+  markEmailVerificationTokenAsUsed,
+  verifyUserEmail,
+  deleteExpiredEmailVerificationTokens
 }; 

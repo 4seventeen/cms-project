@@ -113,11 +113,16 @@ const handleSubmit = async () => {
 
     console.log('Sign up successful:', result.user?.email)
     
-    // Clear any existing profile completion flag
-    localStorage.removeItem('profileCompleted')
+    // Show success message about email verification
+    success.value = result.message || 'Account created successfully! Please check your email to verify your account before signing in.'
     
-    // Redirect to complete profile after successful signup
-    router.push('/complete-profile')
+    // Clear form
+    form.value = {
+      email: '',
+      password: '',
+      confirmPassword: '',
+      username: ''
+    }
   } catch (err) {
     console.error('Sign up error:', err)
     

@@ -113,7 +113,7 @@ async function createUser(userData) {
     const saltRounds = 12;
     const password_hash = await bcrypt.hash(password, saltRounds);
 
-    // Create user in database
+    // Create user in database (email_verified will be false by default)
     const newUser = await databaseService.createUser({
       email,
       password_hash,
@@ -121,21 +121,15 @@ async function createUser(userData) {
       role
     });
 
-    // Generate token pair
-    const { accessToken, refreshToken, refreshTokenId } = generateTokenPair(newUser);
+    // Send email verification
+    await sendEmailVerification(newUser.id, newUser.email);
 
-    // Return user data (without password hash) and tokens
+    // Return user data (without password hash) - no tokens since email not verified
     const { password_hash: _, ...userWithoutPassword } = newUser;
     
     return {
       user: userWithoutPassword,
-      accessToken,
-      refreshToken,
-      refreshTokenId,
-      session: {
-        access_token: accessToken,
-        user: userWithoutPassword
-      }
+      message: 'Account created successfully. Please check your email to verify your account before signing in.'
     };
   } catch (error) {
     console.error('Error in createUser:', error);
@@ -165,6 +159,11 @@ async function signIn(credentials) {
     const isPasswordValid = await bcrypt.compare(password, user.password_hash);
     if (!isPasswordValid) {
       throw new Error('Invalid email or password');
+    }
+
+    // Check if email is verified
+    if (!user.email_verified) {
+      throw new Error('Please verify your email address before signing in. Check your inbox for a verification link.');
     }
 
     // Update last login
@@ -487,6 +486,123 @@ async function cleanupExpiredPasswordResetTokens() {
   }
 }
 
+// Send email verification
+async function sendEmailVerification(userId, email) {
+  try {
+    // Generate verification token
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+
+    // Save verification token to database
+    await databaseService.createEmailVerificationToken(userId, verificationToken, expiresAt);
+
+    // Send verification email
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+      }
+    });
+
+    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email?token=${verificationToken}`;
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Verify Your Email Address',
+      html: `
+        <h2>Welcome to our CMS!</h2>
+        <p>Please click the link below to verify your email address:</p>
+        <a href="${verificationUrl}" style="display: inline-block; padding: 12px 24px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px;">
+          Verify Email Address
+        </a>
+        <p>This link will expire in 24 hours.</p>
+        <p>If you didn't create an account, you can safely ignore this email.</p>
+      `
+    });
+
+    return {
+      success: true,
+      message: 'Verification email sent successfully'
+    };
+  } catch (error) {
+    console.error('Error sending email verification:', error);
+    throw new Error(`Failed to send verification email: ${error.message}`);
+  }
+}
+
+// Verify email with token
+async function verifyEmail(token) {
+  try {
+    // Get and validate verification token
+    const tokenData = await databaseService.getEmailVerificationToken(token);
+    if (!tokenData) {
+      throw new Error('Invalid or expired verification token');
+    }
+
+    // Mark token as used
+    await databaseService.markEmailVerificationTokenAsUsed(token);
+
+    // Verify user's email
+    const verifiedUser = await databaseService.verifyUserEmail(tokenData.user_id);
+
+    return {
+      success: true,
+      message: 'Email verified successfully',
+      user: verifiedUser
+    };
+  } catch (error) {
+    throw new Error(`Email verification failed: ${error.message}`);
+  }
+}
+
+// Resend email verification
+async function resendEmailVerification(email) {
+  try {
+    // Check if user exists
+    const user = await databaseService.getUserByEmail(email);
+    if (!user) {
+      // Don't reveal if user exists or not for security
+      return {
+        success: true,
+        message: 'If an account with that email exists, a verification email has been sent.'
+      };
+    }
+
+    // Check if email is already verified
+    if (user.email_verified) {
+      return {
+        success: true,
+        message: 'Email is already verified'
+      };
+    }
+
+    // Send new verification email
+    await sendEmailVerification(user.id, user.email);
+
+    return {
+      success: true,
+      message: 'If an account with that email exists, a verification email has been sent.'
+    };
+  } catch (error) {
+    console.error('Error resending email verification:', error);
+    throw new Error(`Failed to resend verification email: ${error.message}`);
+  }
+}
+
+// Clean up expired email verification tokens (run this periodically)
+async function cleanupExpiredEmailVerificationTokens() {
+  try {
+    const deletedCount = await databaseService.deleteExpiredEmailVerificationTokens();
+    console.log(`Cleaned up ${deletedCount} expired email verification tokens`);
+    return deletedCount;
+  } catch (error) {
+    console.error('Error cleaning up expired email verification tokens:', error);
+    throw error;
+  }
+}
+
 module.exports = {
   createUser,
   signIn,
@@ -500,6 +616,10 @@ module.exports = {
   forgotPassword,
   resetPassword,
   cleanupExpiredPasswordResetTokens,
+  sendEmailVerification,
+  verifyEmail,
+  resendEmailVerification,
+  cleanupExpiredEmailVerificationTokens,
   generateTokenPair,
   revokeRefreshToken,
   validateRefreshToken

@@ -110,6 +110,28 @@ export const authService = {
       console.error('Token refresh error:', error)
       throw error
     }
+  },
+
+  // Verify email with token
+  async verifyEmail(token) {
+    try {
+      const response = await api.post('/verify-email', { token })
+      return response.data
+    } catch (error) {
+      console.error('Email verification error:', error)
+      throw error
+    }
+  },
+
+  // Resend email verification
+  async resendEmailVerification(email) {
+    try {
+      const response = await api.post('/resend-verification', { email })
+      return response.data
+    } catch (error) {
+      console.error('Resend verification error:', error)
+      throw error
+    }
   }
 }
 

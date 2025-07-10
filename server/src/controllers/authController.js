@@ -47,18 +47,13 @@ const signup = async (req, res) => {
       });
     }
 
-    // Create user
+    // Create user and send verification email
     const result = await authService.createUser({ email, password, username, role });
 
-    // Set authentication cookies
-    setAuthCookies(res, result.accessToken, result.refreshToken);
-
     res.status(201).json({
-      message: 'User created successfully',
+      message: result.message,
       user: result.user,
-      session: {
-        user: result.user
-      }
+      success: true
     });
   } catch (error) {
     console.error('Signup error:', error);
@@ -338,6 +333,66 @@ const resetPassword = async (req, res) => {
   }
 };
 
+// Verify email endpoint
+const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    // Validate input
+    if (!token) {
+      return res.status(400).json({ 
+        error: 'Verification token is required' 
+      });
+    }
+
+    // Verify email
+    const result = await authService.verifyEmail(token);
+
+    res.json({
+      message: result.message,
+      user: result.user,
+      success: true
+    });
+  } catch (error) {
+    console.error('Email verification error:', error);
+    
+    if (error.message.includes('Invalid or expired verification token')) {
+      return res.status(400).json({ error: error.message });
+    }
+    
+    res.status(500).json({ 
+      error: error.message || 'Failed to verify email'
+    });
+  }
+};
+
+// Resend email verification endpoint
+const resendEmailVerification = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Validate input
+    if (!email) {
+      return res.status(400).json({ 
+        error: 'Email is required' 
+      });
+    }
+
+    // Resend verification email
+    const result = await authService.resendEmailVerification(email);
+
+    res.json({
+      message: result.message,
+      success: true
+    });
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({ 
+      error: error.message || 'Failed to resend verification email'
+    });
+  }
+};
+
 module.exports = {
   signup,
   signin,
@@ -347,5 +402,7 @@ module.exports = {
   changePassword,
   logout,
   forgotPassword,
-  resetPassword
+  resetPassword,
+  verifyEmail,
+  resendEmailVerification
 };
