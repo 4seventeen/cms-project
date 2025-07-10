@@ -267,6 +267,77 @@ const logout = async (req, res) => {
   }
 };
 
+// Forgot password endpoint
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    // Validate input
+    if (!email) {
+      return res.status(400).json({ 
+        error: 'Email is required' 
+      });
+    }
+
+    // Process forgot password request
+    const result = await authService.forgotPassword(email);
+
+    res.json({
+      message: result.message,
+      success: true
+    });
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    res.status(500).json({ 
+      error: error.message || 'Failed to process password reset request'
+    });
+  }
+};
+
+// Reset password endpoint
+const resetPassword = async (req, res) => {
+  try {
+    const { token, newPassword, confirmPassword } = req.body;
+
+    // Validate input
+    if (!token || !newPassword || !confirmPassword) {
+      return res.status(400).json({ 
+        error: 'Token, new password, and confirmation are required' 
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ 
+        error: 'New password and confirmation do not match' 
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ 
+        error: 'Password must be at least 6 characters long' 
+      });
+    }
+
+    // Reset password
+    const result = await authService.resetPassword(token, newPassword);
+
+    res.json({
+      message: result.message,
+      success: true
+    });
+  } catch (error) {
+    console.error('Reset password error:', error);
+    
+    if (error.message.includes('Invalid or expired reset token')) {
+      return res.status(400).json({ error: error.message });
+    }
+    
+    res.status(500).json({ 
+      error: error.message || 'Failed to reset password'
+    });
+  }
+};
+
 module.exports = {
   signup,
   signin,
@@ -274,5 +345,7 @@ module.exports = {
   getCurrentUser,
   updateProfile,
   changePassword,
-  logout
+  logout,
+  forgotPassword,
+  resetPassword
 };

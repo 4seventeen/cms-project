@@ -405,6 +405,84 @@ async function createAttachment(attachmentData) {
   }
 }
 
+// Password reset operations
+async function createPasswordResetToken(userId, token, expiresAt) {
+  const query = `
+    INSERT INTO password_reset_tokens (user_id, token, expires_at)
+    VALUES ($1, $2, $3)
+    RETURNING *
+  `;
+  
+  try {
+    const result = await db.query(query, [userId, token, expiresAt]);
+    return result.rows[0];
+  } catch (error) {
+    throw new Error(`Error creating password reset token: ${error.message}`);
+  }
+}
+
+async function getPasswordResetToken(token) {
+  const query = `
+    SELECT prt.*, u.email, u.username
+    FROM password_reset_tokens prt
+    JOIN users u ON prt.user_id = u.id
+    WHERE prt.token = $1 AND prt.expires_at > NOW() AND prt.used = FALSE
+  `;
+  
+  try {
+    const result = await db.query(query, [token]);
+    return result.rows[0] || null;
+  } catch (error) {
+    throw new Error(`Error fetching password reset token: ${error.message}`);
+  }
+}
+
+async function markPasswordResetTokenAsUsed(token) {
+  const query = `
+    UPDATE password_reset_tokens 
+    SET used = TRUE 
+    WHERE token = $1
+    RETURNING *
+  `;
+  
+  try {
+    const result = await db.query(query, [token]);
+    return result.rows[0];
+  } catch (error) {
+    throw new Error(`Error marking password reset token as used: ${error.message}`);
+  }
+}
+
+async function updateUserPassword(userId, newPasswordHash) {
+  const query = `
+    UPDATE users 
+    SET password_hash = $2, updated_at = NOW()
+    WHERE id = $1
+    RETURNING id, email, username
+  `;
+  
+  try {
+    const result = await db.query(query, [userId, newPasswordHash]);
+    return result.rows[0];
+  } catch (error) {
+    throw new Error(`Error updating user password: ${error.message}`);
+  }
+}
+
+async function deleteExpiredPasswordResetTokens() {
+  const query = `
+    DELETE FROM password_reset_tokens 
+    WHERE expires_at < NOW() OR used = TRUE
+  `;
+  
+  try {
+    const result = await db.query(query);
+    return result.rowCount;
+  } catch (error) {
+    throw new Error(`Error deleting expired password reset tokens: ${error.message}`);
+  }
+}
+
 module.exports = {
   testConnection,
   createUser,
@@ -420,5 +498,10 @@ module.exports = {
   updateCase,
   deleteCase,
   createRespondent,
-  createAttachment
+  createAttachment,
+  createPasswordResetToken,
+  getPasswordResetToken,
+  markPasswordResetTokenAsUsed,
+  updateUserPassword,
+  deleteExpiredPasswordResetTokens
 }; 

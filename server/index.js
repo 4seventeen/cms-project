@@ -86,6 +86,8 @@ async function start() {
       console.log(`   - POST /api/signup - Create new user`);
       console.log(`   - POST /api/signin - Sign in user`);
       console.log(`   - POST /api/refresh-token - Refresh access token`);
+      console.log(`   - POST /api/forgot-password - Request password reset`);
+      console.log(`   - POST /api/reset-password - Reset password with token`);
       console.log(`   - GET  /api/user - Get current user (protected)`);
       console.log(`   - PUT  /api/profile - Update user profile (protected)`);
       console.log(`   - POST /api/change-password - Change password (protected)`);
@@ -100,6 +102,16 @@ async function start() {
       console.log(`   - GET    /api/cases/:caseId/attachments/:attachmentId/download - Download file`);
       console.log(`🔗 Other endpoints:`);
       console.log(`   - GET    /api/health - Health check`);
+      
+      // Set up periodic cleanup of expired password reset tokens (every hour)
+      setInterval(async () => {
+        try {
+          const authService = require('./src/services/authService');
+          await authService.cleanupExpiredPasswordResetTokens();
+        } catch (error) {
+          console.error('Failed to cleanup expired password reset tokens:', error);
+        }
+      }, 60 * 60 * 1000); // Run every hour
     });
   } catch (err) {
     console.error('Failed to start server:', err);

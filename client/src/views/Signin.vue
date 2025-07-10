@@ -38,6 +38,10 @@
       <router-link to="/signup" class="signup-link">Sign Up</router-link>
     </div>
     
+    <div class="forgot-password-link">
+      <router-link to="/forgot-password" class="forgot-link">Forgot Password?</router-link>
+    </div>
+    
     <div v-if="error" class="error-message">
       {{ error }}
     </div>
@@ -172,6 +176,23 @@ form {
 }
 
 .signup-link:hover {
+  color: #ff4b4b;
+}
+
+.forgot-password-link {
+  font-size: 14px;
+  color: #555;
+  text-align: center;
+  margin-top: 10px;
+}
+
+.forgot-link {
+  color: #ff6b6b;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.forgot-link:hover {
   color: #ff4b4b;
 }
 </style>

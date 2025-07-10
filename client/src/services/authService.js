@@ -69,6 +69,28 @@ export const authService = {
     }
   },
 
+  // Forgot password
+  async forgotPassword(email) {
+    try {
+      const response = await api.post('/forgot-password', { email })
+      return response.data
+    } catch (error) {
+      console.error('Forgot password error:', error)
+      throw error
+    }
+  },
+
+  // Reset password
+  async resetPassword(resetData) {
+    try {
+      const response = await api.post('/reset-password', resetData)
+      return response.data
+    } catch (error) {
+      console.error('Reset password error:', error)
+      throw error
+    }
+  },
+
   // Check if user is authenticated by making a request to a protected endpoint
   async isAuthenticated() {
     try {

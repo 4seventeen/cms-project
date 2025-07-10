@@ -16,6 +16,16 @@ CREATE TABLE IF NOT EXISTS users (
     last_login TIMESTAMP WITH TIME ZONE
 );
 
+-- Password reset tokens table
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    token VARCHAR(255) UNIQUE NOT NULL,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    used BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Profiles table (additional user information)
 CREATE TABLE IF NOT EXISTS profiles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -78,6 +88,9 @@ CREATE TABLE IF NOT EXISTS case_attachments (
 
 -- Indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_token ON password_reset_tokens(token);
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_id ON password_reset_tokens(user_id);
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_expires_at ON password_reset_tokens(expires_at);
 CREATE INDEX IF NOT EXISTS idx_profiles_user_id ON profiles(user_id);
 CREATE INDEX IF NOT EXISTS idx_cases_user_id ON cases(user_id);
 CREATE INDEX IF NOT EXISTS idx_cases_status ON cases(status);

@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const databaseService = require('./databaseService');
+const nodemailer = require('nodemailer');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-fallback-jwt-secret-key';
 const REFRESH_SECRET = process.env.REFRESH_SECRET || 'your-fallback-refresh-secret-key';
@@ -383,8 +384,8 @@ async function changePassword(userId, currentPassword, newPassword) {
     const saltRounds = 12;
     const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
 
-    // Update password in database (you'll need to add this method to databaseService)
-    // For now, this is a placeholder - you might need to implement updateUserPassword in databaseService
+    // Update password in database
+    await databaseService.updateUserPassword(userId, newPasswordHash);
     
     return {
       success: true,
@@ -392,6 +393,97 @@ async function changePassword(userId, currentPassword, newPassword) {
     };
   } catch (error) {
     throw new Error(`Error changing password: ${error.message}`);
+  }
+}
+
+// Forgot password - send reset email
+async function forgotPassword(email) {
+  try {
+    // Check if user exists
+    const user = await databaseService.getUserByEmail(email);
+    if (!user) {
+      // Don't reveal if user exists or not for security
+      return {
+        success: true,
+        message: 'If an account with that email exists, a password reset link has been sent.'
+      };
+    }
+
+    // Generate reset token
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour from now
+
+    // Save reset token to database
+    await databaseService.createPasswordResetToken(user.id, resetToken, expiresAt);
+
+    // In a real application, you would send an email here
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASSWORD
+      }
+    });
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_USER,
+      to: user.email,
+      subject: 'Password Reset',
+      text: `Click the following link to reset your password: ${process.env.FRONTEND_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`
+    });
+
+    return {
+      success: true,
+      message: 'If an account with that email exists, a password reset link has been sent.',
+    };
+  } catch (error) {
+    console.error('Error in forgotPassword:', error);
+    throw new Error(`Failed to process password reset request: ${error.message}`);
+  }
+}
+
+// Reset password with token
+async function resetPassword(token, newPassword) {
+  try {
+    // Validate new password
+    if (!newPassword || newPassword.length < 6) {
+      throw new Error('Password must be at least 6 characters long');
+    }
+
+    // Get and validate reset token
+    const resetTokenData = await databaseService.getPasswordResetToken(token);
+    if (!resetTokenData) {
+      throw new Error('Invalid or expired reset token');
+    }
+
+    // Hash new password
+    const saltRounds = 12;
+    const newPasswordHash = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update user password
+    await databaseService.updateUserPassword(resetTokenData.user_id, newPasswordHash);
+
+    // Mark token as used
+    await databaseService.markPasswordResetTokenAsUsed(token);
+
+    return {
+      success: true,
+      message: 'Password has been reset successfully'
+    };
+  } catch (error) {
+    throw new Error(`Error resetting password: ${error.message}`);
+  }
+}
+
+// Clean up expired password reset tokens (run this periodically)
+async function cleanupExpiredPasswordResetTokens() {
+  try {
+    const deletedCount = await databaseService.deleteExpiredPasswordResetTokens();
+    console.log(`Cleaned up ${deletedCount} expired password reset tokens`);
+    return deletedCount;
+  } catch (error) {
+    console.error('Error cleaning up expired password reset tokens:', error);
+    throw error;
   }
 }
 
@@ -405,6 +497,9 @@ module.exports = {
   getCurrentUserProfile,
   updateUserProfile,
   changePassword,
+  forgotPassword,
+  resetPassword,
+  cleanupExpiredPasswordResetTokens,
   generateTokenPair,
   revokeRefreshToken,
   validateRefreshToken
