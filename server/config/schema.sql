@@ -5,16 +5,21 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Users table (replaces Supabase auth.users)
-CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    password_hash VARCHAR(255) NOT NULL,
-    username VARCHAR(100),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    email_verified BOOLEAN DEFAULT FALSE,
-    last_login TIMESTAMP WITH TIME ZONE
-);
+CREATE TABLE IF NOT EXISTS public.users
+(
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    email character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    password_hash character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    username character varying(100) COLLATE pg_catalog."default",
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    email_verified boolean DEFAULT false,
+    last_login timestamp with time zone,
+    role boolean NOT NULL DEFAULT false,
+    CONSTRAINT users_pkey PRIMARY KEY (id),
+    CONSTRAINT users_email_key UNIQUE (email)
+)
+
 
 -- Password reset tokens table
 CREATE TABLE IF NOT EXISTS password_reset_tokens (
@@ -37,64 +42,95 @@ CREATE TABLE IF NOT EXISTS email_verification_tokens (
 );
 
 -- Profiles table (additional user information)
-CREATE TABLE IF NOT EXISTS profiles (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    first_name VARCHAR(100),
-    middle_name VARCHAR(100),
-    last_name VARCHAR(100),
-    suffix VARCHAR(50),
-    birth_date DATE,
-    gender VARCHAR(20),
-    phone_number VARCHAR(20),
-    address_line1 VARCHAR(255),
-    address_line2 VARCHAR(255),
-    city VARCHAR(100),
-    province VARCHAR(100),
-    postal_code VARCHAR(20),
-    occupation VARCHAR(100),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+CREATE TABLE IF NOT EXISTS public.profiles
+(
+    id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    user_id uuid,
+    first_name character varying(100) COLLATE pg_catalog."default",
+    middle_name character varying(100) COLLATE pg_catalog."default",
+    last_name character varying(100) COLLATE pg_catalog."default",
+    suffix character varying(50) COLLATE pg_catalog."default",
+    date_of_birth date,
+    sex character varying(20) COLLATE pg_catalog."default",
+    phone character varying(20) COLLATE pg_catalog."default",
+    country character varying(255) COLLATE pg_catalog."default",
+    barangay character varying(255) COLLATE pg_catalog."default",
+    city character varying(100) COLLATE pg_catalog."default",
+    province character varying(100) COLLATE pg_catalog."default",
+    sitio_purok_subdivision character varying(255) COLLATE pg_catalog."default",
+    house_street character varying(100) COLLATE pg_catalog."default",
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT profiles_pkey PRIMARY KEY (id),
+    CONSTRAINT profiles_user_id_fkey FOREIGN KEY (user_id)
+        REFERENCES public.users (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE
+)
 
 -- Cases table
-CREATE TABLE IF NOT EXISTS cases (
-    uuid_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    case_description TEXT NOT NULL,
-    status VARCHAR(50) CHECK (status IN ('pending', 'in progress', 'resolved', 'open', 'closed')) DEFAULT 'pending',
-    case_type VARCHAR(100),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    resolved_at TIMESTAMP WITH TIME ZONE,
-    hearing_date TIMESTAMP WITH TIME ZONE
-);
+CREATE TABLE IF NOT EXISTS public.cases
+(
+    uuid_id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    user_id uuid,
+    case_description text COLLATE pg_catalog."default" NOT NULL,
+    status case_status DEFAULT 'pending'::case_status,
+    case_type character varying(100) COLLATE pg_catalog."default",
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    resolved_at date,
+    hearing_date timestamp with time zone,
+    CONSTRAINT cases_pkey PRIMARY KEY (uuid_id),
+    CONSTRAINT cases_user_id_fkey FOREIGN KEY (user_id)
+        REFERENCES public.users (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE,
+    CONSTRAINT cases_status_check CHECK (status::text = ANY (ARRAY['pending'::character varying::text, 'in progress'::character varying::text, 'resolved'::character varying::text, 'open'::character varying::text, 'closed'::character varying::text]))
+)
+
 
 -- Respondents table (people being complained about)
-CREATE TABLE IF NOT EXISTS respondents (
-    uuid_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    case_uuid UUID REFERENCES cases(uuid_id) ON DELETE CASCADE,
-    first_name VARCHAR(100) NOT NULL,
-    middle_name VARCHAR(100),
-    last_name VARCHAR(100) NOT NULL,
-    suffix VARCHAR(50),
-    sitio_purok_subd VARCHAR(255) NOT NULL,
-    house_no_street VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+CREATE TABLE IF NOT EXISTS public.respondents
+(
+    uuid_id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    case_uuid uuid,
+    first_name character varying(100) COLLATE pg_catalog."default" NOT NULL,
+    middle_name character varying(100) COLLATE pg_catalog."default",
+    last_name character varying(100) COLLATE pg_catalog."default" NOT NULL,
+    suffix character varying(50) COLLATE pg_catalog."default",
+    sitio_purok_subd character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    house_no_street character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    created_at timestamp with time zone DEFAULT now(),
+    updated_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT respondents_pkey PRIMARY KEY (uuid_id),
+    CONSTRAINT respondents_case_uuid_fkey FOREIGN KEY (case_uuid)
+        REFERENCES public.cases (uuid_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE
+)
 
 -- Case attachments table
-CREATE TABLE IF NOT EXISTS case_attachments (
-    uuid_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    case_uuid UUID REFERENCES cases(uuid_id) ON DELETE CASCADE,
-    file_name VARCHAR(255) NOT NULL,
-    file_type VARCHAR(100),
-    file_size BIGINT,
-    storage_path VARCHAR(500) NOT NULL,
-    uploaded_by UUID REFERENCES users(id),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+CREATE TABLE IF NOT EXISTS public.case_attachments
+(
+    uuid_id uuid NOT NULL DEFAULT uuid_generate_v4(),
+    case_uuid uuid,
+    file_name character varying(255) COLLATE pg_catalog."default" NOT NULL,
+    file_type character varying(100) COLLATE pg_catalog."default",
+    file_size bigint,
+    storage_path character varying(500) COLLATE pg_catalog."default" NOT NULL,
+    uploaded_by uuid,
+    created_at timestamp with time zone DEFAULT now(),
+    CONSTRAINT case_attachments_pkey PRIMARY KEY (uuid_id),
+    CONSTRAINT case_attachments_case_uuid_fkey FOREIGN KEY (case_uuid)
+        REFERENCES public.cases (uuid_id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE CASCADE,
+    CONSTRAINT case_attachments_uploaded_by_fkey FOREIGN KEY (uploaded_by)
+        REFERENCES public.users (id) MATCH SIMPLE
+        ON UPDATE NO ACTION
+        ON DELETE NO ACTION
+)
+
 
 -- Indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
@@ -111,6 +147,7 @@ CREATE INDEX IF NOT EXISTS idx_cases_created_at ON cases(created_at);
 CREATE INDEX IF NOT EXISTS idx_respondents_case_uuid ON respondents(case_uuid);
 CREATE INDEX IF NOT EXISTS idx_case_attachments_case_uuid ON case_attachments(case_uuid);
 CREATE INDEX IF NOT EXISTS idx_case_attachments_uploaded_by ON case_attachments(uploaded_by);
+
 
 -- Function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()

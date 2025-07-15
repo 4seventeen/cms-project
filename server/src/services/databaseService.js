@@ -40,7 +40,7 @@ async function createUser(userData) {
 
 async function getUserByEmail(email) {
   const query = `
-    SELECT id, email, password_hash, username, created_at, email_verified, last_login
+    SELECT id, email, password_hash, username, created_at, email_verified, last_login, role
     FROM users 
     WHERE email = $1
   `;
@@ -55,7 +55,7 @@ async function getUserByEmail(email) {
 
 async function getUserById(id) {
   const query = `
-    SELECT id, email, username, created_at, email_verified, last_login
+    SELECT id, email, username, created_at, email_verified, last_login, role
     FROM users 
     WHERE id = $1
   `;

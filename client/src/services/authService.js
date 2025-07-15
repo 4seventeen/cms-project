@@ -132,6 +132,72 @@ export const authService = {
       console.error('Resend verification error:', error)
       throw error
     }
+  },
+
+  // Check if current user is admin
+  async isAdmin() {
+    try {
+      const userData = await this.getCurrentUser()
+      return userData.user?.role === true
+    } catch (error) {
+      console.error('Admin check error:', error)
+      return false
+    }
+  },
+
+  // Admin: Get all cases
+  async getAdminCases() {
+    try {
+      const response = await api.get('/admin/cases')
+      return response.data
+    } catch (error) {
+      console.error('Get admin cases error:', error)
+      throw error
+    }
+  },
+
+  // Admin: Delete a case
+  async deleteCase(caseId) {
+    try {
+      const response = await api.delete(`/admin/cases/${caseId}`)
+      return response.data
+    } catch (error) {
+      console.error('Delete case error:', error)
+      throw error
+    }
+  },
+
+  // Admin: Get all users
+  async getAdminUsers() {
+    try {
+      const response = await api.get('/admin/users')
+      return response.data
+    } catch (error) {
+      console.error('Get admin users error:', error)
+      throw error
+    }
+  },
+
+  // Admin: Get specific user by ID
+  async getAdminUser(userId) {
+    try {
+      const response = await api.get(`/admin/users/${userId}`)
+      return response.data
+    } catch (error) {
+      console.error('Get admin user error:', error)
+      throw error
+    }
+  },
+
+  // Admin: Get user's cases
+  async getAdminUserCases(userId) {
+    try {
+      const response = await api.get(`/admin/users/${userId}/cases`)
+      return response.data
+    } catch (error) {
+      console.error('Get admin user cases error:', error)
+      throw error
+    }
   }
 }
 

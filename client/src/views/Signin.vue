@@ -92,18 +92,23 @@ const handleSubmit = async () => {
     })
 
     console.log('Sign in successful:', result.user?.email)
+    console.log('User role:', result.user?.role)
+    console.log('Is admin:', result.user?.role === true)
     
     // Update navbar auth status
     if (window.updateNavAuthStatus) {
-      window.updateNavAuthStatus(true)
+      window.updateNavAuthStatus(true, result.user?.role === true)
     }
     
-    // Check if user has completed their profile using the result from signin
-    if (!result.user?.profile) {
-      // No profile - redirect to complete profile
+    // Check if user is admin or regular user and redirect appropriately
+    if (result.user?.role === true) {
+      // Admin user - redirect to admin dashboard
+      router.push('/admin/dashboard')
+    } else if (!result.user?.profile) {
+      // Regular user without profile - redirect to complete profile
       router.push('/complete-profile')
     } else {
-      // Profile exists - redirect to dashboard
+      // Regular user with profile - redirect to user dashboard
       router.push('/dashboard')
     }
   } catch (err) {

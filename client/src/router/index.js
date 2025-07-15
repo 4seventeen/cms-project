@@ -76,6 +76,41 @@ const routes = [
     path: '/edit-profile',
     name: 'EditProfile',
     component: () => import('../views/CompleteProfile.vue')
+  },
+  // Admin routes
+  {
+    path: '/admin',
+    redirect: '/admin/dashboard'
+  },
+  {
+    path: '/admin/dashboard',
+    name: 'AdminDashboard',
+    component: () => import('../views/admin/AdminDashboard.vue'),
+    meta: { requiresAdmin: true }
+  },
+  {
+    path: '/admin/manage-users',
+    name: 'AdminManageUsers',
+    component: () => import('../views/admin/AdminManageUsers.vue'),
+    meta: { requiresAdmin: true }
+  },
+  {
+    path: '/admin/users/:id',
+    name: 'AdminUserProfile',
+    component: () => import('../views/admin/AdminUserProfile.vue'),
+    meta: { requiresAdmin: true }
+  },
+  {
+    path: '/admin/calendar',
+    name: 'AdminCalendar',
+    component: () => import('../views/admin/AdminCalendar.vue'),
+    meta: { requiresAdmin: true }
+  },
+  {
+    path: '/admin/profile',
+    name: 'AdminProfile',
+    component: () => import('../views/Profile.vue'),
+    meta: { requiresAdmin: true }
   }
 ]
 
@@ -88,9 +123,12 @@ router.beforeEach(async (to, from, next) => {
   // Define routes that REQUIRE authentication
   const protectedRoutes = ['/dashboard', '/file-complaint', '/calendar', '/profile', '/complete-profile', '/edit-profile'];
   const caseRoutePattern = /^\/case/; // Matches /case/*, /case/*/edit
+  const adminRoutePattern = /^\/admin/; // Matches /admin/*
   
   // Check if current route requires authentication
-  const requiresAuth = protectedRoutes.includes(to.path) || caseRoutePattern.test(to.path);
+  const requiresAuth = protectedRoutes.includes(to.path) || 
+                      caseRoutePattern.test(to.path) || 
+                      adminRoutePattern.test(to.path);
   
   // If route doesn't require auth, allow access
   if (!requiresAuth) {
@@ -102,7 +140,17 @@ router.beforeEach(async (to, from, next) => {
     // Check authentication by getting current user
     const userData = await authService.getCurrentUser();
     
-    // User is authenticated, now check for profile completion for certain routes
+    // Check for admin routes
+    if (to.meta?.requiresAdmin || adminRoutePattern.test(to.path)) {
+      if (!userData.user?.role) {
+        console.log('Admin access required but user is not admin, redirecting to dashboard');
+        return next('/dashboard');
+      }
+      // Admin user accessing admin route - allow access
+      return next();
+    }
+    
+    // Regular user routes - check for profile completion for certain routes
     const profileRequiredRoutes = ['/dashboard', '/file-complaint', '/calendar'];
     
     const requiresProfile = profileRequiredRoutes.includes(to.path) || 

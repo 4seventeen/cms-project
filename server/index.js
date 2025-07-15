@@ -4,6 +4,7 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 const authRoutes = require('./routes/auth');
 const caseRoutes = require('./routes/caseRoutes');
+const adminRoutes = require('./routes/adminRoutes');
 const db = require('./config/database');
 
 const app = express();
@@ -24,6 +25,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Routes
 app.use('/api', authRoutes);
 app.use('/api', caseRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
@@ -102,6 +104,13 @@ async function start() {
       console.log(`   - DELETE /api/cases/:id - Delete case`);
       console.log(`   - POST   /api/cases/:caseId/attachments - Upload files`);
       console.log(`   - GET    /api/cases/:caseId/attachments/:attachmentId/download - Download file`);
+      console.log(`🔗 Admin endpoints:`);
+      console.log(`   - GET    /api/admin/cases - Get all cases (admin only)`);
+      console.log(`   - GET    /api/admin/cases/:id - Get specific case (admin only)`);
+      console.log(`   - DELETE /api/admin/cases/:id - Delete case (admin only)`);
+      console.log(`   - GET    /api/admin/users - Get all users (admin only)`);
+      console.log(`   - GET    /api/admin/users/:id - Get specific user (admin only)`);
+      console.log(`   - GET    /api/admin/users/:id/cases - Get user's cases (admin only)`);
       console.log(`🔗 Other endpoints:`);
       console.log(`   - GET    /api/health - Health check`);
       

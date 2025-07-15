@@ -13,11 +13,22 @@
         </template>
         <!-- Authenticated links -->
         <template v-else>
-          <router-link to="/dashboard" class="nav-link">Dashboard</router-link>
-          <router-link to="/file-complaint" class="nav-link">File Complaint</router-link>
-          <router-link to="/calendar" class="nav-link">Calendar</router-link>
-          <router-link to="/profile" class="nav-link">Profile</router-link>
-          <button @click="handleSignOut" class="nav-link signout-btn">Sign Out</button>
+          <!-- Admin navigation -->
+          <template v-if="props.isAdmin">
+            <router-link to="/admin/dashboard" class="nav-link">Dashboard</router-link>
+            <router-link to="/admin/manage-users" class="nav-link">Manage Users</router-link>
+            <router-link to="/admin/calendar" class="nav-link">Calendar</router-link>
+            <router-link to="/admin/profile" class="nav-link">Profile</router-link>
+            <button @click="handleSignOut" class="nav-link signout-btn">Sign Out</button>
+          </template>
+          <!-- Regular user navigation -->
+          <template v-else>
+            <router-link to="/dashboard" class="nav-link">Dashboard</router-link>
+            <router-link to="/file-complaint" class="nav-link">File Complaint</router-link>
+            <router-link to="/calendar" class="nav-link">Calendar</router-link>
+            <router-link to="/profile" class="nav-link">Profile</router-link>
+            <button @click="handleSignOut" class="nav-link signout-btn">Sign Out</button>
+          </template>
         </template>
       </div>
     </div>
@@ -47,11 +58,15 @@ const props = defineProps({
   isLoggedIn: {
     type: Boolean,
     default: false
+  },
+  isAdmin: {
+    type: Boolean,
+    default: false
   }
 })
 
 // Debug logging
-console.log('Navbar isLoggedIn:', props.isLoggedIn)
+console.log('Navbar isLoggedIn:', props.isLoggedIn, 'isAdmin:', props.isAdmin)
 </script>
 
 <style scoped>
