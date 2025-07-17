@@ -6,7 +6,7 @@
     
     <div v-else-if="error" class="error-state">
       <p>{{ error }}</p>
-      <Button variant="primary" @click="$router.push('/dashboard')">
+      <Button variant="primary" @click="navigateBack">
         Back to Dashboard
       </Button>
     </div>
@@ -15,7 +15,7 @@
       <div class="case-header">
         <h1>Case Details</h1>
         <div class="case-actions">
-          <Button variant="secondary" @click="$router.push('/dashboard')">
+          <Button variant="secondary" @click="navigateBack">
             Back to Dashboard
           </Button>
           <Button variant="primary" @click="editCase">
@@ -142,17 +142,43 @@ const loading = ref(true)
 const error = ref('')
 
 onMounted(async () => {
-  await Promise.all([loadCase(), loadUserInfo()])
+  await loadCase()
+  await loadUserInfo()
 })
 
-// Fetch complainant (authenticated user) info
+// Fetch complainant info (either current user for regular users, or case complainant for admins)
 const loadUserInfo = async () => {
   try {
-    const userInfo = await authService.getCurrentUser()
-    if (!userInfo?.user) throw new Error('Failed to fetch user')
+    const isAdmin = await authService.isAdmin()
     
-    user.value = userInfo.user
-    profile.value = userInfo.user.profile || null
+    if (isAdmin && caseData.value) {
+      // For admins, use complainant data from the case
+      user.value = {
+        email: caseData.value.complainant_email
+      }
+      profile.value = {
+        first_name: caseData.value.complainant_first_name,
+        middle_name: caseData.value.complainant_middle_name,
+        last_name: caseData.value.complainant_last_name,
+        suffix: caseData.value.complainant_suffix,
+        phone: caseData.value.complainant_phone,
+        date_of_birth: caseData.value.complainant_date_of_birth,
+        sex: caseData.value.complainant_sex,
+        house_street: caseData.value.complainant_house_street,
+        sitio_purok_subdivision: caseData.value.complainant_sitio_purok_subdivision,
+        barangay: caseData.value.complainant_barangay,
+        city: caseData.value.complainant_city,
+        province: caseData.value.complainant_province,
+        country: caseData.value.complainant_country
+      }
+    } else {
+      // For regular users, use current authenticated user
+      const userInfo = await authService.getCurrentUser()
+      if (!userInfo?.user) throw new Error('Failed to fetch user')
+      
+      user.value = userInfo.user
+      profile.value = userInfo.user.profile || null
+    }
   } catch (err) {
     console.error('Error loading complainant info:', err)
   }
@@ -161,7 +187,17 @@ const loadUserInfo = async () => {
 const loadCase = async () => {
   try {
     const caseId = route.params.id
-    const response = await getCaseById(caseId)
+    
+    // Check if current user is admin and use appropriate method
+    const isAdmin = await authService.isAdmin()
+    let response
+    
+    if (isAdmin) {
+      response = await authService.getAdminCase(caseId)
+    } else {
+      response = await getCaseById(caseId)
+    }
+    
     caseData.value = response.case
 
     // Build basic timeline once we have the case data
@@ -190,6 +226,15 @@ const loadCase = async () => {
 const editCase = () => {
   if (!caseData.value) return
   router.push(`/case/${caseData.value.id}/edit`)
+}
+
+const navigateBack = async () => {
+  const isAdmin = await authService.isAdmin()
+  if (isAdmin) {
+    router.push('/admin/dashboard')
+  } else {
+    router.push('/dashboard')
+  }
 }
 
 const downloadReport = () => {

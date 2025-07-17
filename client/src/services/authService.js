@@ -156,6 +156,17 @@ export const authService = {
     }
   },
 
+  // Admin: Get specific case by ID
+  async getAdminCase(caseId) {
+    try {
+      const response = await api.get(`/admin/cases/${caseId}`)
+      return response.data
+    } catch (error) {
+      console.error('Get admin case error:', error)
+      throw error
+    }
+  },
+
   // Admin: Delete a case
   async deleteCase(caseId) {
     try {

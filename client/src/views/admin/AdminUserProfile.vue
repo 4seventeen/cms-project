@@ -76,8 +76,16 @@
                 <span>{{ user.first_name || 'Not provided' }}</span>
               </div>
               <div class="detail-item">
+                <label>Middle Name</label>
+                <span>{{ user.middle_name || 'Not provided' }}</span>
+              </div>
+              <div class="detail-item">
                 <label>Last Name</label>
                 <span>{{ user.last_name || 'Not provided' }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Suffix</label>
+                <span>{{ user.suffix || 'Not provided' }}</span>
               </div>
               <div class="detail-item">
                 <label>Email</label>
@@ -92,8 +100,8 @@
                 <span>{{ user.date_of_birth || 'Not provided' }}</span>
               </div>
               <div class="detail-item">
-                <label>Gender</label>
-                <span>{{ user.gender || 'Not provided' }}</span>
+                <label>Sex</label>
+                <span>{{ user.sex || 'Not provided' }}</span>
               </div>
             </div>
           </div>
@@ -101,25 +109,29 @@
           <div class="details-card">
             <h3 class="card-title">Address Information</h3>
             <div class="details-grid">
-              <div class="detail-item full-width">
-                <label>Address</label>
-                <span>{{ user.address || 'Not provided' }}</span>
+              <div class="detail-item">
+                <label>Country</label>
+                <span>{{ user.country || 'Not provided' }}</span>
+              </div>
+              <div class="detail-item">
+                <label>Province</label>
+                <span>{{ user.province || 'Not provided' }}</span>
               </div>
               <div class="detail-item">
                 <label>City</label>
                 <span>{{ user.city || 'Not provided' }}</span>
               </div>
               <div class="detail-item">
-                <label>State</label>
-                <span>{{ user.state || 'Not provided' }}</span>
+                <label>Barangay</label>
+                <span>{{ user.barangay || 'Not provided' }}</span>
               </div>
               <div class="detail-item">
-                <label>Postal Code</label>
-                <span>{{ user.postal_code || 'Not provided' }}</span>
+                <label>Sitio/Purok/Subd.</label>
+                <span>{{ user.sitio_purok_subdivision || 'Not provided' }}</span>
               </div>
               <div class="detail-item">
-                <label>Country</label>
-                <span>{{ user.country || 'Not provided' }}</span>
+                <label>House & Street</label>
+                <span>{{ user.house_street || 'Not provided' }}</span>
               </div>
             </div>
           </div>

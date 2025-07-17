@@ -16,11 +16,20 @@ const getAllCases = async (req, res) => {
       p.first_name as complainant_first_name,
       p.last_name as complainant_last_name,
       c.case_description as case_title,
-      'Unknown' as respondent_name,
+      COALESCE(
+        CONCAT_WS(' ', 
+          r.first_name, 
+          NULLIF(r.middle_name, ''), 
+          r.last_name, 
+          NULLIF(r.suffix, '')
+        ), 
+        'No respondent listed'
+      ) as respondent_name,
       c.case_type as case_category
     FROM cases c
     LEFT JOIN users u ON c.user_id = u.id
     LEFT JOIN profiles p ON u.id = p.user_id
+    LEFT JOIN respondents r ON c.uuid_id = r.case_uuid
     ORDER BY c.created_at DESC
   `;
     
@@ -51,14 +60,39 @@ const getCaseById = async (req, res) => {
       c.*,
       u.email as complainant_email,
       p.first_name as complainant_first_name,
+      p.middle_name as complainant_middle_name,
       p.last_name as complainant_last_name,
+      p.suffix as complainant_suffix,
       p.phone as complainant_phone,
+      p.date_of_birth as complainant_date_of_birth,
+      p.sex as complainant_sex,
+      p.house_street as complainant_house_street,
+      p.sitio_purok_subdivision as complainant_sitio_purok_subdivision,
+      p.barangay as complainant_barangay,
+      p.city as complainant_city,
+      p.province as complainant_province,
+      p.country as complainant_country,
       c.case_description as case_title,
-      'Unknown' as respondent_name,
+      COALESCE(
+        CONCAT_WS(' ', 
+          r.first_name, 
+          NULLIF(r.middle_name, ''), 
+          r.last_name, 
+          NULLIF(r.suffix, '')
+        ), 
+        'No respondent listed'
+      ) as respondent_name,
+      r.first_name as respondent_first_name,
+      r.middle_name as respondent_middle_name,
+      r.last_name as respondent_last_name,
+      r.suffix as respondent_suffix,
+      r.sitio_purok_subd as respondent_sitio_purok_subd,
+      r.house_no_street as respondent_house_no_street,
       c.case_type as case_category
     FROM cases c
     LEFT JOIN users u ON c.user_id = u.id
     LEFT JOIN profiles p ON u.id = p.user_id
+    LEFT JOIN respondents r ON c.uuid_id = r.case_uuid
     WHERE c.uuid_id = $1
   `;
     
@@ -70,10 +104,44 @@ const getCaseById = async (req, res) => {
         success: false 
       });
     }
+
+    // Get attachments for this case
+    const attachmentsQuery = `
+      SELECT 
+        uuid_id as id,
+        file_name,
+        file_type,
+        file_size,
+        storage_path,
+        created_at
+      FROM case_attachments 
+      WHERE case_uuid = $1
+      ORDER BY created_at DESC
+    `;
+    
+    const attachmentsResult = await db.query(attachmentsQuery, [id]);
+    
+    // Add attachments and respondents array to match expected format
+    const caseData = result.rows[0];
+    caseData.attachments = attachmentsResult.rows;
+    
+    // Create respondents array from the respondent data
+    if (caseData.respondent_first_name) {
+      caseData.respondents = [{
+        first_name: caseData.respondent_first_name,
+        middle_name: caseData.respondent_middle_name,
+        last_name: caseData.respondent_last_name,
+        suffix: caseData.respondent_suffix,
+        sitio_purok_subd: caseData.respondent_sitio_purok_subd,
+        house_no_street: caseData.respondent_house_no_street
+      }];
+    } else {
+      caseData.respondents = [];
+    }
     
     res.json({
       success: true,
-      case: result.rows[0]
+      case: caseData
     });
   } catch (error) {
     console.error('Admin get case by ID error:', error);
@@ -164,10 +232,25 @@ const getUserById = async (req, res) => {
         u.id,
         u.email,
         u.created_at,
+        u.updated_at,
         u.last_login,
         u.email_verified,
         u.role,
-        p.*
+        p.first_name,
+        p.middle_name,
+        p.last_name,
+        p.suffix,
+        p.date_of_birth,
+        p.sex,
+        p.phone,
+        p.country,
+        p.province,
+        p.city,
+        p.barangay,
+        p.sitio_purok_subdivision,
+        p.house_street,
+        p.created_at as profile_created_at,
+        p.updated_at as profile_updated_at
       FROM users u
       LEFT JOIN profiles p ON u.id = p.user_id
       WHERE u.id = $1 AND u.role = false
@@ -221,14 +304,23 @@ const getUserCases = async (req, res) => {
     // Get all cases for this user
     const casesQuery = `
       SELECT 
-        uuid_id as id,
-        *,
-        case_description as case_title,
-        'Unknown' as respondent_name,
-        case_type as case_category
-      FROM cases
-      WHERE user_id = $1
-      ORDER BY created_at DESC
+        c.uuid_id as id,
+        c.*,
+        c.case_description as case_title,
+        COALESCE(
+          CONCAT_WS(' ', 
+            r.first_name, 
+            NULLIF(r.middle_name, ''), 
+            r.last_name, 
+            NULLIF(r.suffix, '')
+          ), 
+          'No respondent listed'
+        ) as respondent_name,
+        c.case_type as case_category
+      FROM cases c
+      LEFT JOIN respondents r ON c.uuid_id = r.case_uuid
+      WHERE c.user_id = $1
+      ORDER BY c.created_at DESC
     `;
     
     const casesResult = await db.query(casesQuery, [id]);
