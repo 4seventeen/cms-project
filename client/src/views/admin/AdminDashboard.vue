@@ -15,6 +15,10 @@
           <h3 class="stat-title">Pending Cases</h3>
           <p class="stat-number">{{ pendingCases }}</p>
         </div>
+        <div class="stat-card">
+          <h3 class="stat-title">Resolved Cases</h3>
+          <p class="stat-number">{{ resolvedCases }}</p>
+        </div>
       </div>
     </div>
 
@@ -69,7 +73,7 @@
                 <span class="category-badge">{{ caseItem.case_category }}</span>
               </td>
               <td class="status">
-                <span :class="getStatusClass(caseItem.status)">{{ caseItem.status }}</span>
+                <span :class="getStatusClass(normalizeStatus(caseItem.status))">{{ normalizeStatus(caseItem.status) }}</span>
               </td>
               <td class="date">{{ formatDate(caseItem.created_at) }}</td>
               <td class="actions">
@@ -80,6 +84,13 @@
                 >
                   👁️
                 </router-link>
+                <button 
+                  @click="editCase(caseItem)" 
+                  class="edit-btn"
+                  title="Edit Case"
+                >
+                  ✏️
+                </button>
                 <button 
                   @click="confirmDelete(caseItem)" 
                   class="delete-btn"
@@ -120,7 +131,10 @@
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import authService from '../../services/authService.js'
+
+const router = useRouter()
 
 // Reactive data
 const cases = ref([])
@@ -130,6 +144,27 @@ const searchTerm = ref('')
 const showDeleteModal = ref(false)
 const caseToDelete = ref(null)
 const deleting = ref(false)
+
+// Helper function to normalize case status
+const normalizeStatus = (status) => {
+  if (!status) return 'Pending' // Default status for cases without status
+  
+  // Normalize common status variations
+  const statusMap = {
+    'pending': 'Pending',
+    'under review': 'Under Review',
+    'in progress': 'In Progress', 
+    'in_progress': 'In Progress',
+    'resolved': 'Resolved',
+    'closed': 'Closed',
+    'terminated': 'Terminated',
+    'filed': 'Pending', // Filed cases are typically pending
+    'submitted': 'Pending'
+  }
+  
+  const normalizedKey = status.toLowerCase().trim()
+  return statusMap[normalizedKey] || status // Return original if no mapping found
+}
 
 // Computed properties
 const filteredCases = computed(() => {
@@ -143,18 +178,29 @@ const filteredCases = computed(() => {
     caseItem.complainant_email?.toLowerCase().includes(term) ||
     caseItem.respondent_name?.toLowerCase().includes(term) ||
     caseItem.case_category?.toLowerCase().includes(term) ||
-    caseItem.status?.toLowerCase().includes(term)
+    normalizeStatus(caseItem.status)?.toLowerCase().includes(term)
   )
 })
 
 const activeCases = computed(() => {
-  return cases.value.filter(caseItem => 
-    caseItem.status === 'Under Review' || caseItem.status === 'In Progress'
-  ).length
+  return cases.value.filter(caseItem => {
+    const status = normalizeStatus(caseItem.status)
+    return status === 'Under Review' || status === 'In Progress'
+  }).length
 })
 
 const pendingCases = computed(() => {
-  return cases.value.filter(caseItem => caseItem.status === 'Pending').length
+  return cases.value.filter(caseItem => {
+    const status = normalizeStatus(caseItem.status)
+    return status === 'Pending'
+  }).length
+})
+
+const resolvedCases = computed(() => {
+  return cases.value.filter(caseItem => {
+    const status = normalizeStatus(caseItem.status)
+    return status === 'Resolved' || status === 'Closed'
+  }).length
 })
 
 // Methods
@@ -164,6 +210,23 @@ const loadCases = async () => {
     error.value = ''
     const response = await authService.getAdminCases()
     cases.value = response.cases || []
+    
+    // Debug: Log status information
+    if (cases.value.length > 0) {
+      const statusCounts = {}
+      cases.value.forEach(caseItem => {
+        const originalStatus = caseItem.status || 'undefined'
+        const normalizedStatus = normalizeStatus(caseItem.status)
+        
+        if (!statusCounts[normalizedStatus]) {
+          statusCounts[normalizedStatus] = { count: 0, original: new Set() }
+        }
+        statusCounts[normalizedStatus].count++
+        statusCounts[normalizedStatus].original.add(originalStatus)
+      })
+      
+      console.log('Case status summary:', statusCounts)
+    }
   } catch (err) {
     console.error('Failed to load cases:', err)
     error.value = 'Failed to load cases. Please try again.'
@@ -180,6 +243,10 @@ const confirmDelete = (caseItem) => {
 const cancelDelete = () => {
   showDeleteModal.value = false
   caseToDelete.value = null
+}
+
+const editCase = (caseItem) => {
+  router.push(`/admin/case/${caseItem.id}/edit`)
 }
 
 const deleteCase = async () => {
@@ -208,7 +275,8 @@ const getStatusClass = (status) => {
     'Under Review': 'status-review',
     'In Progress': 'status-progress',
     'Resolved': 'status-resolved',
-    'Closed': 'status-closed'
+    'Closed': 'status-closed',
+    'Terminated': 'status-terminated'
   }
   return statusClasses[status] || 'status-default'
 }
@@ -237,7 +305,7 @@ onMounted(() => {
 
 .stats-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 20px;
   margin-top: 20px;
 }
@@ -378,13 +446,15 @@ onMounted(() => {
 .status-progress { color: #8b5cf6; }
 .status-resolved { color: #10b981; }
 .status-closed { color: #6b7280; }
+.status-terminated { color: #d32f2f; font-weight: bold; }
+.status-default { color: #ef4444; font-weight: bold; }
 
 .actions {
   display: flex;
   gap: 8px;
 }
 
-.view-btn, .delete-btn {
+.view-btn, .edit-btn, .delete-btn {
   padding: 6px 8px;
   border: none;
   border-radius: 4px;
@@ -396,6 +466,11 @@ onMounted(() => {
 .view-btn {
   background: #e0f2fe;
   color: #0277bd;
+}
+
+.edit-btn {
+  background: #f3e8ff;
+  color: #7c3aed;
 }
 
 .delete-btn {

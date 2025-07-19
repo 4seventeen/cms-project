@@ -111,6 +111,12 @@ const routes = [
     name: 'AdminProfile',
     component: () => import('../views/Profile.vue'),
     meta: { requiresAdmin: true }
+  },
+  {
+    path: '/admin/case/:id/edit',
+    name: 'AdminEditCase',
+    component: () => import('../views/admin/AdminEditCase.vue'),
+    meta: { requiresAdmin: true }
   }
 ]
 

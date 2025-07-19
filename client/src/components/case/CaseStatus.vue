@@ -9,7 +9,7 @@ const props = defineProps({
   status: {
     type: String,
     required: true,
-    validator: (value) => ['open', 'in progress', 'in-progress', 'resolved', 'closed', 'pending'].includes(value.toLowerCase())
+    validator: (value) => ['open', 'in progress', 'resolved', 'closed', 'pending', 'terminated'].includes(value.toLowerCase())
   }
 })
 
@@ -61,5 +61,10 @@ const displayText = computed(() => {
 .status-pending {
   background: #e1f5fe;
   color: #0277bd;
+}
+
+.status-terminated {
+  background: #ffebee;
+  color: #d32f2f;
 }
 </style> 

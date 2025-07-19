@@ -259,7 +259,8 @@ const getStatusClass = (status) => {
     'Under Review': 'status-review',
     'In Progress': 'status-progress',
     'Resolved': 'status-resolved',
-    'Closed': 'status-closed'
+    'Closed': 'status-closed',
+    'Terminated': 'status-terminated'
   }
   return statusClasses[status] || 'status-default'
 }
@@ -487,6 +488,7 @@ onMounted(() => {
 .status-progress { color: #8b5cf6; }
 .status-resolved { color: #10b981; }
 .status-closed { color: #6b7280; }
+.status-terminated { color: #d32f2f; font-weight: bold; }
 
 .coming-soon {
   text-align: center;

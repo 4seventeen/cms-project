@@ -167,6 +167,17 @@ export const authService = {
     }
   },
 
+  // Admin: Update a case
+  async updateAdminCase(caseId, payload) {
+    try {
+      const response = await api.put(`/admin/cases/${caseId}`, payload)
+      return response.data
+    } catch (error) {
+      console.error('Update admin case error:', error)
+      throw error
+    }
+  },
+
   // Admin: Delete a case
   async deleteCase(caseId) {
     try {

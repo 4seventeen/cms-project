@@ -34,6 +34,12 @@
               <span class="info-value">{{ caseData.case_type || 'Theft and Robbery' }}</span>
             </div>
             <div class="info-row">
+              <span class="info-label">Status:</span>
+              <span class="info-value">
+                <CaseStatus :status="caseData.status || 'pending'" />
+              </span>
+            </div>
+            <div class="info-row">
               <span class="info-label">Respondent:</span>
               <span class="info-value">{{ respondentFullName }}</span>
             </div>
@@ -128,6 +134,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { getCaseById } from '../services/caseService.js'
 import Card from '../components/common/Card.vue'
 import Button from '../components/common/Button.vue'
+import CaseStatus from '../components/case/CaseStatus.vue'
 import authService from '../services/authService.js'
 
 // Additional reactive state for complainant and timeline
@@ -223,9 +230,16 @@ const loadCase = async () => {
   }
 }
 
-const editCase = () => {
+const editCase = async () => {
   if (!caseData.value) return
-  router.push(`/case/${caseData.value.id}/edit`)
+  
+  // Check if user is admin and route to appropriate edit form
+  const isAdmin = await authService.isAdmin()
+  if (isAdmin) {
+    router.push(`/admin/case/${caseData.value.id}/edit`)
+  } else {
+    router.push(`/case/${caseData.value.id}/edit`)
+  }
 }
 
 const navigateBack = async () => {

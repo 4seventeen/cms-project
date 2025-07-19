@@ -186,6 +186,109 @@ const deleteCase = async (req, res) => {
   }
 };
 
+// Update a case (admin only) - allows status changes and description updates
+const updateCase = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { case_description, status, case_type } = req.body;
+    
+    // Valid status options
+    const validStatuses = ['open', 'in progress', 'resolved', 'closed', 'pending', 'terminated'];
+    
+    // Check if case exists
+    const checkQuery = 'SELECT uuid_id FROM cases WHERE uuid_id = $1';
+    const checkResult = await db.query(checkQuery, [id]);
+    
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ 
+        error: 'Case not found',
+        success: false 
+      });
+    }
+
+    // Validate status if provided
+    if (status && !validStatuses.includes(status.toLowerCase())) {
+      return res.status(400).json({ 
+        error: `Invalid status. Valid options: ${validStatuses.join(', ')}`,
+        success: false 
+      });
+    }
+
+    // Build update query dynamically
+    const updateFields = [];
+    const values = [];
+    let paramIndex = 1;
+
+    if (case_description) {
+      updateFields.push(`case_description = $${paramIndex}`);
+      values.push(case_description);
+      paramIndex++;
+    }
+
+    if (status) {
+      updateFields.push(`status = $${paramIndex}`);
+      values.push(status.toLowerCase());
+      paramIndex++;
+    }
+
+    if (case_type) {
+      updateFields.push(`case_type = $${paramIndex}`);
+      values.push(case_type);
+      paramIndex++;
+    }
+
+    if (updateFields.length === 0) {
+      return res.status(400).json({ 
+        error: 'No fields to update',
+        success: false 
+      });
+    }
+
+    // Add updated_at field
+    updateFields.push(`updated_at = CURRENT_TIMESTAMP`);
+    
+    // Add case ID to values
+    values.push(id);
+
+    const updateQuery = `
+      UPDATE cases 
+      SET ${updateFields.join(', ')}
+      WHERE uuid_id = $${values.length}
+      RETURNING uuid_id, case_description, status, case_type, updated_at
+    `;
+
+    const updateResult = await db.query(updateQuery, values);
+
+    if (updateResult.rows.length === 0) {
+      return res.status(500).json({ 
+        error: 'Failed to update case',
+        success: false 
+      });
+    }
+
+    // Get the complete updated case data
+    const completeCase = await getCaseById(req, res);
+    
+    // If getCaseById was successful, it already sent the response
+    if (res.headersSent) {
+      return;
+    }
+
+    res.json({
+      success: true,
+      message: 'Case updated successfully',
+      case: updateResult.rows[0]
+    });
+
+  } catch (error) {
+    console.error('Admin update case error:', error);
+    res.status(500).json({ 
+      error: 'Failed to update case',
+      success: false 
+    });
+  }
+};
+
 // Get all non-admin users
 const getAllUsers = async (req, res) => {
   try {
@@ -367,6 +470,7 @@ const getSystemStatistics = async (req, res) => {
 module.exports = {
   getAllCases,
   getCaseById,
+  updateCase,
   deleteCase,
   getAllUsers,
   getUserById,
