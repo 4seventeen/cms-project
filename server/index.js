@@ -2,9 +2,9 @@ const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const path = require('path');
-const authRoutes = require('./routes/auth');
-const caseRoutes = require('./routes/caseRoutes');
-const adminRoutes = require('./routes/adminRoutes');
+const authRoutes = require('./src/routes/auth');
+const caseRoutes = require('./src/routes/caseRoutes');
+const adminRoutes = require('./src/routes/adminRoutes');
 const db = require('./config/database');
 
 const app = express();

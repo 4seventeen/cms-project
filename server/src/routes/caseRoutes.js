@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const caseController = require('../src/controllers/caseController');
-const { authMiddleware } = require('../src/middleware/authMiddleware');
-const { upload } = require('../config/fileStorage');
+const caseController = require('../controllers/caseController');
+const { authMiddleware } = require('../middleware/authMiddleware');
+const { upload } = require('../../config/fileStorage');
 
 // All case routes require authentication
 router.use(authMiddleware);
