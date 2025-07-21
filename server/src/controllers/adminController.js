@@ -289,6 +289,90 @@ const updateCase = async (req, res) => {
   }
 };
 
+// Update a case category (admin only) - dedicated endpoint for case categorization
+const updateCaseCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { case_type } = req.body;
+    
+    // Valid case type options from the enum
+    const validCaseTypes = [
+      'uncategorized',
+      'public_order_offenses', 
+      'identity_and_document_fraud',
+      'personal_harm',
+      'child_and_family_cases',
+      'property_offenses',
+      'trespass_and_coercion',
+      'privacy_violations',
+      'threats_and_honor_offenses',
+      'financial_offenses',
+      'other'
+    ];
+    
+    // Check if case exists
+    const checkQuery = 'SELECT uuid_id FROM cases WHERE uuid_id = $1';
+    const checkResult = await db.query(checkQuery, [id]);
+    
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ 
+        error: 'Case not found',
+        success: false 
+      });
+    }
+
+    // Validate case_type if provided
+    if (!case_type) {
+      return res.status(400).json({ 
+        error: 'case_type is required',
+        success: false 
+      });
+    }
+
+    if (!validCaseTypes.includes(case_type)) {
+      return res.status(400).json({ 
+        error: `Invalid case type. Valid options: ${validCaseTypes.join(', ')}`,
+        success: false 
+      });
+    }
+
+    // Update the case category
+    const updateQuery = `
+      UPDATE cases 
+      SET case_type = $1, updated_at = CURRENT_TIMESTAMP 
+      WHERE uuid_id = $2 
+      RETURNING *
+    `;
+    
+    const updateResult = await db.query(updateQuery, [case_type, id]);
+    
+    if (updateResult.rows.length === 0) {
+      return res.status(500).json({ 
+        error: 'Failed to update case category',
+        success: false 
+      });
+    }
+
+    // Return the updated case with the same structure as getCaseById
+    const updatedCase = updateResult.rows[0];
+    
+    res.json({
+      success: true,
+      message: 'Case category updated successfully',
+      case: {
+        ...updatedCase,
+        id: updatedCase.uuid_id
+      }
+    });
+  } catch (error) {
+    console.error('Admin update case category error:', error);
+    res.status(500).json({ 
+      error: 'Failed to update case category',
+      success: false 
+    });
+  }
+};
+
 // Get all non-admin users
 const getAllUsers = async (req, res) => {
   try {
@@ -471,6 +555,7 @@ module.exports = {
   getAllCases,
   getCaseById,
   updateCase,
+  updateCaseCategory,
   deleteCase,
   getAllUsers,
   getUserById,

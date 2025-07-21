@@ -178,6 +178,17 @@ export const authService = {
     }
   },
 
+  // Admin: Update case category
+  async updateCaseCategory(caseId, caseType) {
+    try {
+      const response = await api.patch(`/admin/cases/${caseId}/category`, { case_type: caseType })
+      return response.data
+    } catch (error) {
+      console.error('Update case category error:', error)
+      throw error
+    }
+  },
+
   // Admin: Delete a case
   async deleteCase(caseId) {
     try {

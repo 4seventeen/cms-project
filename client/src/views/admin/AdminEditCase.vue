@@ -61,14 +61,29 @@
             </div>
             
             <!-- Case Type -->
-            <FormInput
-              v-model="form.case_type"
-              label="Case Type"
-              type="text"
-              placeholder="e.g., Theft and Robbery, Domestic Violence"
-              :disabled="submitting"
-              :error="errors.case_type"
-            />
+            <div class="form-group">
+              <label for="case_type" class="form-label">Case Type</label>
+              <select 
+                id="case_type"
+                v-model="form.case_type"
+                class="form-select"
+                :disabled="submitting"
+                :class="{ 'error': errors.case_type }"
+              >
+                <option value="uncategorized">Uncategorized</option>
+                <option value="public_order_offenses">Public Order Offenses</option>
+                <option value="identity_and_document_fraud">Identity and Document Fraud</option>
+                <option value="personal_harm">Personal Harm</option>
+                <option value="child_and_family_cases">Child and Family Cases</option>
+                <option value="property_offenses">Property Offenses</option>
+                <option value="trespass_and_coercion">Trespass and Coercion</option>
+                <option value="privacy_violations">Privacy Violations</option>
+                <option value="threats_and_honor_offenses">Threats and Honor Offenses</option>
+                <option value="financial_offenses">Financial Offenses</option>
+                <option value="other">Other</option>
+              </select>
+              <span v-if="errors.case_type" class="error-text">{{ errors.case_type }}</span>
+            </div>
             
             <div class="form-actions">
               <Button
@@ -103,6 +118,10 @@
               <span class="info-value">
                 <CaseStatus :status="caseData.status || 'pending'" />
               </span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Case Type:</span>
+              <span class="info-value">{{ formatCaseType(caseData.case_type || 'uncategorized') }}</span>
             </div>
             <div class="info-row">
               <span class="info-label">Complainant:</span>
@@ -184,7 +203,7 @@ const loadCase = async () => {
     // Populate form with current values
     form.value.case_description = response.case.case_description || ''
     form.value.status = response.case.status || ''
-    form.value.case_type = response.case.case_type || ''
+    form.value.case_type = response.case.case_type || 'uncategorized'
   } catch (err) {
     console.error('Error loading case:', err)
     
@@ -230,6 +249,11 @@ const validateForm = () => {
   
   if (!form.value.status) {
     errors.value.status = 'Status is required'
+    isValid = false
+  }
+  
+  if (!form.value.case_type) {
+    errors.value.case_type = 'Case type is required'
     isValid = false
   }
   
@@ -282,6 +306,31 @@ const handleSubmit = async () => {
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A'
   return new Date(dateString).toLocaleString()
+}
+
+const formatCaseType = (caseType) => {
+  switch (caseType) {
+    case 'public_order_offenses':
+      return 'Public Order Offenses'
+    case 'identity_and_document_fraud':
+      return 'Identity and Document Fraud'
+    case 'personal_harm':
+      return 'Personal Harm'
+    case 'child_and_family_cases':
+      return 'Child and Family Cases'
+    case 'property_offenses':
+      return 'Property Offenses'
+    case 'trespass_and_coercion':
+      return 'Trespass and Coercion'
+    case 'privacy_violations':
+      return 'Privacy Violations'
+    case 'threats_and_honor_offenses':
+      return 'Threats and Honor Offenses'
+    case 'financial_offenses':
+      return 'Financial Offenses'
+    default:
+      return caseType
+  }
 }
 </script>
 

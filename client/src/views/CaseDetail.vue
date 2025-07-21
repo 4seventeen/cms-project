@@ -30,8 +30,7 @@
           <div class="case-info">
             <div class="info-row">
               <span class="info-label">Case Type:</span>
-              <!-- TODO: Replace static text when case_type enum is added -->
-              <span class="info-value">{{ caseData.case_type || 'Theft and Robbery' }}</span>
+              <span class="info-value">{{ formatCaseType(caseData.case_type || 'uncategorized') }}</span>
             </div>
             <div class="info-row">
               <span class="info-label">Status:</span>
@@ -196,17 +195,17 @@ const loadCase = async () => {
     const caseId = route.params.id
     
     // Check if current user is admin and use appropriate method
-    const isAdmin = await authService.isAdmin()
+    const isAdminUser = await authService.isAdmin()
     let response
     
-    if (isAdmin) {
+    if (isAdminUser) {
       response = await authService.getAdminCase(caseId)
     } else {
       response = await getCaseById(caseId)
     }
     
     caseData.value = response.case
-
+    
     // Build basic timeline once we have the case data
     timelineEvents.value = [
       { title: 'Case filed', date: response.case.created_at },
@@ -234,8 +233,7 @@ const editCase = async () => {
   if (!caseData.value) return
   
   // Check if user is admin and route to appropriate edit form
-  const isAdmin = await authService.isAdmin()
-  if (isAdmin) {
+  if (await authService.isAdmin()) {
     router.push(`/admin/case/${caseData.value.id}/edit`)
   } else {
     router.push(`/case/${caseData.value.id}/edit`)
@@ -243,8 +241,7 @@ const editCase = async () => {
 }
 
 const navigateBack = async () => {
-  const isAdmin = await authService.isAdmin()
-  if (isAdmin) {
+  if (await authService.isAdmin()) {
     router.push('/admin/dashboard')
   } else {
     router.push('/dashboard')
@@ -325,6 +322,27 @@ const attachments = computed(() => caseData.value?.attachments || [])
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A'
   return new Date(dateString).toLocaleString()
+}
+
+// Format case type for display
+const formatCaseType = (caseType) => {
+  if (!caseType) return 'Uncategorized'
+  
+  const typeMap = {
+    'uncategorized': 'Uncategorized',
+    'public_order_offenses': 'Public Order Offenses',
+    'identity_and_document_fraud': 'Identity and Document Fraud',
+    'personal_harm': 'Personal Harm',
+    'child_and_family_cases': 'Child and Family Cases',
+    'property_offenses': 'Property Offenses',
+    'trespass_and_coercion': 'Trespass and Coercion',
+    'privacy_violations': 'Privacy Violations',
+    'threats_and_honor_offenses': 'Threats and Honor Offenses',
+    'financial_offenses': 'Financial Offenses',
+    'other': 'Other'
+  }
+  
+  return typeMap[caseType] || caseType
 }
 </script>
 

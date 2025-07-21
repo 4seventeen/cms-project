@@ -56,6 +56,9 @@ const createCase = async (req, res) => {
       return res.status(400).json({ error: 'Invalid status value' });
     }
 
+    // Set default case_type to 'uncategorized' for new cases
+    const defaultCaseType = case_type || 'uncategorized';
+
     // Validate required fields
     if (!case_description || !respondent_first_name || !respondent_last_name || !respondent_sitio || !respondent_house) {
       return res.status(400).json({ 
@@ -69,7 +72,7 @@ const createCase = async (req, res) => {
         user_id: userId,
         case_description,
         status,
-        case_type
+        case_type: defaultCaseType
       });
 
       // Create the respondent record

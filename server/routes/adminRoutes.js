@@ -15,6 +15,7 @@ router.get('/cases', adminController.getAllCases);
 // Admin Case Management
 router.get('/cases/:id', adminController.getCaseById);
 router.put('/cases/:id', adminController.updateCase);
+router.patch('/cases/:id/category', adminController.updateCaseCategory);
 router.delete('/cases/:id', adminController.deleteCase);
 
 // Admin User Management
