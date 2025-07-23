@@ -111,6 +111,7 @@ async function start() {
       console.log(`   - GET    /api/admin/users - Get all users (admin only)`);
       console.log(`   - GET    /api/admin/users/:id - Get specific user (admin only)`);
       console.log(`   - GET    /api/admin/users/:id/cases - Get user's cases (admin only)`);
+      console.log(`   - PUT    /api/admin/users/:id/profile - Update user profile (admin only)`);
       console.log(`🔗 Other endpoints:`);
       console.log(`   - GET    /api/health - Health check`);
       

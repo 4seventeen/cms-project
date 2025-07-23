@@ -22,6 +22,7 @@ router.delete('/cases/:id', adminController.deleteCase);
 router.get('/users', adminController.getAllUsers);
 router.get('/users/:id', adminController.getUserById);
 router.get('/users/:id/cases', adminController.getUserCases);
+router.put('/users/:id/profile', adminController.updateUserProfile);
 
 // Admin Statistics (future expansion)
 // router.get('/statistics', adminController.getSystemStatistics);

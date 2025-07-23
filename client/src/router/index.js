@@ -75,7 +75,7 @@ const routes = [
   {
     path: '/edit-profile',
     name: 'EditProfile',
-    component: () => import('../views/CompleteProfile.vue')
+    component: () => import('../views/EditProfile.vue')
   },
   // Admin routes
   {
@@ -113,9 +113,21 @@ const routes = [
     meta: { requiresAdmin: true }
   },
   {
+    path: '/admin/edit-profile',
+    name: 'AdminEditProfile',
+    component: () => import('../views/EditProfile.vue'),
+    meta: { requiresAdmin: true }
+  },
+  {
     path: '/admin/case/:id/edit',
     name: 'AdminEditCase',
     component: () => import('../views/admin/AdminEditCase.vue'),
+    meta: { requiresAdmin: true }
+  },
+  {
+    path: '/admin/users/:userId/edit',
+    name: 'AdminEditUserProfile',
+    component: () => import('../views/EditProfile.vue'),
     meta: { requiresAdmin: true }
   }
 ]

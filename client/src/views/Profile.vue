@@ -33,10 +33,10 @@
     </Card>
 
     <div class="actions">
-      <Button variant="primary" @click="$router.push('/dashboard')">
+      <Button variant="primary" @click="handleBackToDashboard">
         Back to Dashboard
       </Button>
-      <Button variant="secondary" @click="$router.push('/edit-profile')">Edit Profile</Button>
+      <Button variant="secondary" @click="handleEditProfile">Edit Profile</Button>
       <Button variant="danger" @click="signOut">Sign Out</Button>
     </div>
 
@@ -87,6 +87,24 @@ const loadUserInfo = async () => {
     return
   } finally {
     loading.value = false
+  }
+}
+
+const handleBackToDashboard = () => {
+  // Check if user is admin and route appropriately
+  if (user.value?.role === true) {
+    router.push('/admin/dashboard')
+  } else {
+    router.push('/dashboard')
+  }
+}
+
+const handleEditProfile = () => {
+  // Check if user is admin and route appropriately
+  if (user.value?.role === true) {
+    router.push('/admin/edit-profile')
+  } else {
+    router.push('/edit-profile')
   }
 }
 

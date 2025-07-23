@@ -231,6 +231,17 @@ export const authService = {
       console.error('Get admin user cases error:', error)
       throw error
     }
+  },
+
+  // Admin: Update user's profile
+  async updateAdminUserProfile(userId, profileData) {
+    try {
+      const response = await api.put(`/admin/users/${userId}/profile`, profileData)
+      return response.data
+    } catch (error) {
+      console.error('Update admin user profile error:', error)
+      throw error
+    }
   }
 }
 

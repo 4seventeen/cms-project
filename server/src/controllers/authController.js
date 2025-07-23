@@ -162,14 +162,33 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
-// Update user profile endpoint
+// Update user profile endpoint (restricted for regular users)
 const updateProfile = async (req, res) => {
   try {
     const userId = req.user.id;
     const profileData = req.body;
 
-    // Remove any fields that shouldn't be updated directly
-    const { id, user_id, created_at, updated_at, ...allowedUpdates } = profileData;
+    // Get user role to determine allowed updates
+    const user = await authService.getUserFromToken(req.cookies.accessToken || req.header('Authorization')?.replace('Bearer ', ''));
+    
+    let allowedUpdates;
+    
+    if (user.role === true) {
+      // Admin users can update all profile fields
+      const { id, user_id, created_at, updated_at, ...allUpdates } = profileData;
+      allowedUpdates = allUpdates;
+    } else {
+      // Regular users can only update phone number
+      const { phone } = profileData;
+      allowedUpdates = { phone };
+      
+      // Validate phone number for regular users
+      if (phone && !/^[0-9]{11}$/.test(phone)) {
+        return res.status(400).json({ 
+          error: 'Phone number must be 11 digits'
+        });
+      }
+    }
 
     const updatedProfile = await authService.updateUserProfile(userId, allowedUpdates);
     

@@ -527,6 +527,59 @@ const getUserCases = async (req, res) => {
   }
 };
 
+// Update any user's profile (admin only)
+const updateUserProfile = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const profileData = req.body;
+    
+    // Check if user exists and is not an admin
+    const userQuery = 'SELECT id, role FROM users WHERE id = $1';
+    const userResult = await db.query(userQuery, [id]);
+    
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ 
+        error: 'User not found',
+        success: false 
+      });
+    }
+    
+    if (userResult.rows[0].role === true) {
+      return res.status(400).json({ 
+        error: 'Cannot edit admin user profiles',
+        success: false 
+      });
+    }
+
+    // Remove any fields that shouldn't be updated directly
+    const { id: profileId, user_id, created_at, updated_at, email, role, ...allowedUpdates } = profileData;
+
+    // Validate phone number if provided
+    if (allowedUpdates.phone && !/^[0-9]{11}$/.test(allowedUpdates.phone)) {
+      return res.status(400).json({ 
+        error: 'Phone number must be 11 digits',
+        success: false 
+      });
+    }
+
+    // Update the profile using the authService
+    const authService = require('../services/authService');
+    const updatedProfile = await authService.updateUserProfile(id, allowedUpdates);
+    
+    res.json({
+      success: true,
+      message: 'User profile updated successfully',
+      profile: updatedProfile
+    });
+  } catch (error) {
+    console.error('Admin update user profile error:', error);
+    res.status(500).json({ 
+      error: 'Failed to update user profile',
+      success: false 
+    });
+  }
+};
+
 // Future: Get system-wide statistics
 const getSystemStatistics = async (req, res) => {
   try {
@@ -560,5 +613,6 @@ module.exports = {
   getAllUsers,
   getUserById,
   getUserCases,
+  updateUserProfile,
   getSystemStatistics
 }; 

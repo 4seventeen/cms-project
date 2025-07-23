@@ -36,15 +36,20 @@
             <span class="cases-badge">{{ userCases.length }} Cases Filed</span>
           </div>
         </div>
-        <div class="user-stats">
-          <div class="stat-item">
-            <span class="stat-label">Joined</span>
-            <span class="stat-value">{{ formatDate(user.created_at) }}</span>
+        <div class="user-actions">
+          <div class="user-stats">
+            <div class="stat-item">
+              <span class="stat-label">Joined</span>
+              <span class="stat-value">{{ formatDate(user.created_at) }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Last Login</span>
+              <span class="stat-value">{{ user.last_login ? formatDate(user.last_login) : 'Never' }}</span>
+            </div>
           </div>
-          <div class="stat-item">
-            <span class="stat-label">Last Login</span>
-            <span class="stat-value">{{ user.last_login ? formatDate(user.last_login) : 'Never' }}</span>
-          </div>
+          <button @click="editProfile" class="edit-profile-btn">
+            Edit Profile
+          </button>
         </div>
       </div>
 
@@ -269,6 +274,10 @@ const viewCase = (caseItem) => {
   router.push(`/case/${caseItem.id}`)
 }
 
+const editProfile = () => {
+  router.push(`/admin/users/${userId}/edit`)
+}
+
 const formatDate = (dateString) => {
   if (!dateString) return 'N/A'
   return new Date(dateString).toLocaleDateString()
@@ -428,9 +437,32 @@ onMounted(() => {
   font-weight: 500;
 }
 
+.user-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 16px;
+}
+
 .user-stats {
   display: flex;
   gap: 24px;
+}
+
+.edit-profile-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.edit-profile-btn:hover {
+  background: #2563eb;
 }
 
 .stat-item {
