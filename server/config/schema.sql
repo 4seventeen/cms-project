@@ -41,6 +41,15 @@ CREATE TABLE IF NOT EXISTS email_verification_tokens (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
+-- Refresh tokens table (for persistent token storage)
+CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    token_id VARCHAR(255) UNIQUE NOT NULL,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Profiles table (additional user information)
 CREATE TABLE IF NOT EXISTS public.profiles
 (

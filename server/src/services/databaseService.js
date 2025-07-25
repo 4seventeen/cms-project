@@ -561,6 +561,64 @@ async function deleteExpiredEmailVerificationTokens() {
   }
 }
 
+// Refresh token operations
+async function createRefreshToken(tokenId, userId, expiresAt) {
+  const query = `
+    INSERT INTO refresh_tokens (token_id, user_id, expires_at)
+    VALUES ($1, $2, $3)
+    RETURNING *
+  `;
+  
+  try {
+    const result = await db.query(query, [tokenId, userId, expiresAt]);
+    return result.rows[0];
+  } catch (error) {
+    throw new Error(`Error creating refresh token: ${error.message}`);
+  }
+}
+
+async function getRefreshToken(tokenId) {
+  const query = `
+    SELECT * FROM refresh_tokens 
+    WHERE token_id = $1 AND expires_at > NOW()
+  `;
+  
+  try {
+    const result = await db.query(query, [tokenId]);
+    return result.rows[0];
+  } catch (error) {
+    throw new Error(`Error getting refresh token: ${error.message}`);
+  }
+}
+
+async function deleteRefreshToken(tokenId) {
+  const query = `
+    DELETE FROM refresh_tokens 
+    WHERE token_id = $1
+  `;
+  
+  try {
+    const result = await db.query(query, [tokenId]);
+    return result.rowCount > 0;
+  } catch (error) {
+    throw new Error(`Error deleting refresh token: ${error.message}`);
+  }
+}
+
+async function deleteExpiredRefreshTokens() {
+  const query = `
+    DELETE FROM refresh_tokens 
+    WHERE expires_at < NOW()
+  `;
+  
+  try {
+    const result = await db.query(query);
+    return result.rowCount;
+  } catch (error) {
+    throw new Error(`Error deleting expired refresh tokens: ${error.message}`);
+  }
+}
+
 module.exports = {
   testConnection,
   createUser,
@@ -586,5 +644,9 @@ module.exports = {
   getEmailVerificationToken,
   markEmailVerificationTokenAsUsed,
   verifyUserEmail,
-  deleteExpiredEmailVerificationTokens
+  deleteExpiredEmailVerificationTokens,
+  createRefreshToken,
+  getRefreshToken,
+  deleteRefreshToken,
+  deleteExpiredRefreshTokens
 }; 

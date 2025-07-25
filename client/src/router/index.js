@@ -73,6 +73,11 @@ const routes = [
     component: () => import('../views/CompleteProfile.vue')
   },
   {
+    path: '/transaction/:caseId',
+    name: 'TransactionPage',
+    component: () => import('../views/TransactionPage.vue')
+  },
+  {
     path: '/edit-profile',
     name: 'EditProfile',
     component: () => import('../views/EditProfile.vue')
@@ -141,11 +146,13 @@ router.beforeEach(async (to, from, next) => {
   // Define routes that REQUIRE authentication
   const protectedRoutes = ['/dashboard', '/file-complaint', '/calendar', '/profile', '/complete-profile', '/edit-profile'];
   const caseRoutePattern = /^\/case/; // Matches /case/*, /case/*/edit
+  const transactionRoutePattern = /^\/transaction/; // Matches /transaction/*
   const adminRoutePattern = /^\/admin/; // Matches /admin/*
   
   // Check if current route requires authentication
   const requiresAuth = protectedRoutes.includes(to.path) || 
                       caseRoutePattern.test(to.path) || 
+                      transactionRoutePattern.test(to.path) ||
                       adminRoutePattern.test(to.path);
   
   // If route doesn't require auth, allow access

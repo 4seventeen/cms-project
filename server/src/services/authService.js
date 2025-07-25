@@ -9,8 +9,7 @@ const REFRESH_SECRET = process.env.REFRESH_SECRET || 'your-fallback-refresh-secr
 const JWT_EXPIRES_IN = '15m'; // Short-lived access token
 const REFRESH_EXPIRES_IN = '7d'; // Long-lived refresh token
 
-// In-memory store for refresh tokens (in production, use Redis or similar)
-const refreshTokenStore = new Map();
+// Refresh tokens are now stored in database for persistence
 
 /**
  * Authentication service for PostgreSQL with Cookie-based JWT and Refresh Tokens
@@ -18,7 +17,7 @@ const refreshTokenStore = new Map();
  */
 
 // Generate token pair (access + refresh)
-function generateTokenPair(user) {
+async function generateTokenPair(user) {
   // Generate access token
   const accessToken = jwt.sign(
     { 
@@ -43,35 +42,31 @@ function generateTokenPair(user) {
     { expiresIn: REFRESH_EXPIRES_IN }
   );
 
-  // Store refresh token in memory with expiration
+  // Store refresh token in database with expiration
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-  refreshTokenStore.set(refreshTokenId, {
-    userId: user.id,
-    expiresAt,
-    createdAt: new Date()
-  });
+  await databaseService.createRefreshToken(refreshTokenId, user.id, expiresAt);
 
   return { accessToken, refreshToken, refreshTokenId };
 }
 
 // Revoke refresh token
-function revokeRefreshToken(tokenId) {
-  refreshTokenStore.delete(tokenId);
+async function revokeRefreshToken(tokenId) {
+  await databaseService.deleteRefreshToken(tokenId);
 }
 
 // Validate refresh token
-function validateRefreshToken(tokenId) {
-  const tokenData = refreshTokenStore.get(tokenId);
+async function validateRefreshToken(tokenId) {
+  const tokenData = await databaseService.getRefreshToken(tokenId);
   if (!tokenData) {
     return null;
   }
 
-  if (tokenData.expiresAt < new Date()) {
-    refreshTokenStore.delete(tokenId);
-    return null;
-  }
-
-  return tokenData;
+  // Database query already filters by expires_at > NOW(), so if we get data, it's valid
+  return {
+    userId: tokenData.user_id,
+    expiresAt: tokenData.expires_at,
+    createdAt: tokenData.created_at
+  };
 }
 
 // Clean expired tokens (call periodically)
@@ -170,7 +165,7 @@ async function signIn(credentials) {
     await databaseService.updateUserLastLogin(user.id);
 
     // Generate token pair
-    const { accessToken, refreshToken, refreshTokenId } = generateTokenPair(user);
+    const { accessToken, refreshToken, refreshTokenId } = await generateTokenPair(user);
 
     // Return user data (without password hash) and tokens
     const { password_hash: _, ...userWithoutPassword } = user;
@@ -206,7 +201,7 @@ async function refreshAccessToken(refreshToken) {
     }
 
     // Validate refresh token in store
-    const tokenData = validateRefreshToken(decoded.tokenId);
+    const tokenData = await validateRefreshToken(decoded.tokenId);
     if (!tokenData || tokenData.userId !== decoded.sub) {
       throw new Error('Invalid or expired refresh token');
     }
@@ -218,10 +213,10 @@ async function refreshAccessToken(refreshToken) {
     }
 
     // Generate new token pair
-    const { accessToken, refreshToken: newRefreshToken, refreshTokenId: newRefreshTokenId } = generateTokenPair(user);
+    const { accessToken, refreshToken: newRefreshToken, refreshTokenId: newRefreshTokenId } = await generateTokenPair(user);
 
     // Revoke old refresh token
-    revokeRefreshToken(decoded.tokenId);
+    await revokeRefreshToken(decoded.tokenId);
 
     return {
       user,
@@ -244,7 +239,7 @@ async function refreshAccessToken(refreshToken) {
 async function signOut(refreshTokenId) {
   try {
     if (refreshTokenId) {
-      revokeRefreshToken(refreshTokenId);
+      await revokeRefreshToken(refreshTokenId);
     }
     return { success: true, message: 'Signed out successfully' };
   } catch (error) {

@@ -5,6 +5,7 @@ const path = require('path');
 const authRoutes = require('./src/routes/auth');
 const caseRoutes = require('./src/routes/caseRoutes');
 const adminRoutes = require('./src/routes/adminRoutes');
+const paymentRoutes = require('./src/routes/paymentRoutes');
 const db = require('./config/database');
 
 const app = express();
@@ -26,6 +27,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api', authRoutes);
 app.use('/api', caseRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
@@ -112,6 +114,11 @@ async function start() {
       console.log(`   - GET    /api/admin/users/:id - Get specific user (admin only)`);
       console.log(`   - GET    /api/admin/users/:id/cases - Get user's cases (admin only)`);
       console.log(`   - PUT    /api/admin/users/:id/profile - Update user profile (admin only)`);
+      console.log(`🔗 Payment endpoints:`);
+      console.log(`   - POST   /api/payments/reference - Generate payment reference`);
+      console.log(`   - POST   /api/payments/upload - Upload GCash receipt`);
+      console.log(`   - GET    /api/payments/status/:caseId - Get payment status`);
+      console.log(`   - DELETE /api/payments/cases/:caseId - Delete case with payments`);
       console.log(`🔗 Other endpoints:`);
       console.log(`   - GET    /api/health - Health check`);
       

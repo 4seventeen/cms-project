@@ -234,7 +234,7 @@ const handleSubmit = async () => {
 
     }
 
-    success.value = 'Complaint submitted successfully! Redirecting to dashboard...'
+    success.value = 'Complaint submitted successfully! Redirecting to payment...'
 
     // Clear form
     form.value = {
@@ -249,7 +249,7 @@ const handleSubmit = async () => {
     }
 
     setTimeout(() => {
-      router.push('/dashboard')
+      router.push(`/transaction/${caseId}`)
     }, 2000)
   } catch (err) {
     const errorMessage = err.response?.data?.error || 'Failed to submit complaint'
